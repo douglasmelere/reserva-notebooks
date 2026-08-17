@@ -326,7 +326,7 @@ async function principal(): Promise<void> {
     `\nSupervisor criado com sucesso.\n\n` +
       `  usuário: ${criado.username}\n` +
       `  nome:    ${criado.fullName}\n` +
-      `  acesso:  ${appUrl}/login\n\n` +
+      `  acesso:  ${appUrl}/entrar\n\n` +
       "Próximos passos:\n" +
       "  1. Entre com esse usuário e defina uma senha pessoal (a conta está marcada\n" +
       "     para troca obrigatória de senha no primeiro acesso).\n" +

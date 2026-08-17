@@ -35,16 +35,18 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Valores de fachada, apenas para satisfazer a validação de configuração
+# durante o build. Nenhum segredo real entra na imagem: os valores de verdade
+# chegam em runtime, pelo Coolify. Nem `prisma generate` nem o build abrem
+# conexão com o banco — o `prisma.config.ts` só exige que a variável exista.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build" \
+    SESSION_SECRET="build-time-placeholder-not-used-at-runtime-000000"
+
 # O Prisma 7 gera o client como TypeScript em src/generated/prisma, então
 # precisa rodar ANTES do build — o bundler o inclui na saída.
 RUN npx prisma generate
 
-# Variáveis apenas para satisfazer a validação de ambiente durante o build.
-# Nenhum segredo real entra na imagem: os valores de verdade chegam em runtime,
-# pelo Coolify. O build não abre conexão com o banco.
-RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
-    SESSION_SECRET="build-time-placeholder-not-used-at-runtime-000000" \
-    npm run build
+RUN npm run build
 
 # ---------------------------------------------------------------------------
 FROM ${NODE_IMAGE} AS prod-deps
@@ -64,16 +66,33 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0
 
+# `openssl` silencia o aviso de detecção de libssl emitido pelo CLI do Prisma
+# durante as migrações — ruído desnecessário no log do Coolify.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
+
 # Roda como usuário sem privilégios. A imagem node já traz o usuário `node`.
 RUN mkdir -p /data/uploads && chown -R node:node /data
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder  --chown=node:node /app/dist ./dist
-COPY --from=builder  --chown=node:node /app/src/generated ./src/generated
 COPY --chown=node:node package.json ./
 COPY --chown=node:node prisma ./prisma
 COPY --chown=node:node prisma.config.ts ./
+
+# Os scripts operacionais (criar o primeiro supervisor, limpeza periódica,
+# seed) rodam com `tsx` DENTRO do container e importam de `src/` pelo alias
+# "@/". Sem o código-fonte e sem o tsconfig que define o alias, esses comandos
+# falham no terminal do Coolify — e criar o primeiro supervisor é justamente um
+# passo obrigatório do deploy. São arquivos de texto, com peso desprezível.
+COPY --chown=node:node tsconfig.json ./
+COPY --chown=node:node src ./src
 COPY --chown=node:node scripts ./scripts
+
+# Depois de `src`, para que o client gerado no build sempre prevaleça sobre
+# qualquer resquício vindo do contexto.
+COPY --from=builder --chown=node:node /app/src/generated ./src/generated
 COPY --chown=node:node docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh

@@ -321,12 +321,21 @@ nada: um professor que chame uma rota administrativa direto recebe `403`.
 ## Testes
 
 ```bash
-# banco de teste (uma vez)
+# bancos de teste (uma vez)
 docker exec reserva-db psql -U reserva -d postgres -c "CREATE DATABASE reserva_test OWNER reserva;"
+docker exec reserva-db psql -U reserva -d postgres -c "CREATE DATABASE reserva_e2e  OWNER reserva;"
 DATABASE_URL="postgresql://reserva:devpass@localhost:55432/reserva_test" npx prisma migrate deploy
+DATABASE_URL="postgresql://reserva:devpass@localhost:55432/reserva_e2e"  npx prisma migrate deploy
 
-npm test
-npm run test:e2e
+npm test          # 149 testes de unidade e integração
+npm run test:e2e  # 44 cenários ponta a ponta (desktop e celular)
+```
+
+Se o servidor de produção já estiver rodando, aponte o Playwright para ele em
+vez de deixá-lo construir de novo:
+
+```bash
+E2E_BASE_URL=http://127.0.0.1:3210 npm run test:e2e
 ```
 
 Os testes de integração rodam contra um PostgreSQL **real**, e não contra um

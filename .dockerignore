@@ -1,0 +1,32 @@
+# Contexto de build enxuto: sem isto o Docker envia node_modules inteiro ao
+# daemon a cada build, e o `npm ci` do estágio de dependências fica lento sem
+# necessidade.
+
+node_modules
+dist
+.output
+.vinext
+*.tsbuildinfo
+
+# O Prisma Client é gerado dentro do estágio de build; a cópia da máquina de
+# desenvolvimento pode estar desatualizada e não deve entrar no contexto.
+src/generated
+
+# Segredos nunca entram na imagem — as variáveis chegam em runtime.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+test-results
+playwright-report
+blob-report
+coverage
+/data
+uploads
+
+.vscode
+.idea
+.DS_Store
+*.log
