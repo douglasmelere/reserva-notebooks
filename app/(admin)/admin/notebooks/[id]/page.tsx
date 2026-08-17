@@ -98,6 +98,21 @@ const TOM_DA_OCORRENCIA: Record<string, BadgeTone> = {
   RECORRENTE: "danger",
 };
 
+/**
+ * A trilha de auditoria guarda a ação como chave técnica
+ * ("notebook.transferir"). Quem lê a tela é a supervisão, então a chave nunca
+ * aparece crua.
+ */
+const ACAO_LABEL: Record<string, string> = {
+  "notebook.criar": "Equipamento cadastrado",
+  "notebook.atualizar": "Cadastro editado",
+  "notebook.status": "Status alterado",
+  "notebook.transferir": "Transferido de kit",
+  "notebook.desativar": "Equipamento desativado",
+  "notebook.bloquear": "Enviado para manutenção por ocorrência",
+  "notebook.liberar": "Liberado após ocorrência",
+};
+
 const BOTAO_SECUNDARIO =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
 
@@ -449,14 +464,16 @@ export default async function NotebookDetalhePage({
                       className="border-l-2 border-slate-200 pl-3"
                     >
                       <p className="text-sm text-slate-900">
-                        {registro.summary ?? registro.action}
+                        {registro.summary ??
+                          ACAO_LABEL[registro.action] ??
+                          registro.action}
                       </p>
                       <p className="text-xs text-slate-500">
                         {formatDateTimeBR(registro.createdAt)} ·{" "}
                         {registro.actor
                           ? registro.actor.fullName
                           : "usuário removido"}{" "}
-                        · {registro.action}
+                        · {ACAO_LABEL[registro.action] ?? registro.action}
                       </p>
                     </li>
                   ))}

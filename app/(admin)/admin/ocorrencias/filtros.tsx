@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { SelectField, TextField } from "@/components/ui/field";
-import { Card, CardBody } from "@/components/ui/primitives";
+import { Alert, Card, CardBody } from "@/components/ui/primitives";
 
 type Opcao = { value: string; label: string };
 
@@ -44,12 +44,23 @@ export function FiltrosOcorrencias({
 }) {
   const router = useRouter();
   const [aplicando, iniciarTransicao] = useTransition();
+  const [erroPeriodo, setErroPeriodo] = useState<string | null>(null);
 
   const assinatura = Object.values(valores).join("|");
 
   function aplicar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     const dados = new FormData(evento.currentTarget);
+
+    // Período invertido devolvia uma lista vazia com a mensagem genérica de
+    // "nenhuma ocorrência com esses filtros" — que não conta qual é o erro.
+    const de = String(dados.get("de") ?? "");
+    const ate = String(dados.get("ate") ?? "");
+    if (de && ate && de > ate) {
+      setErroPeriodo("Esta data é anterior à data inicial.");
+      return;
+    }
+    setErroPeriodo(null);
 
     const params = new URLSearchParams();
     for (const campo of [
@@ -74,6 +85,7 @@ export function FiltrosOcorrencias({
   }
 
   function limpar() {
+    setErroPeriodo(null);
     iniciarTransicao(() => {
       router.push("/admin/ocorrencias");
     });
@@ -124,6 +136,7 @@ export function FiltrosOcorrencias({
               name="ate"
               type="date"
               defaultValue={valores.ate}
+              error={erroPeriodo}
             />
             <TextField
               label="Buscar"
@@ -135,6 +148,15 @@ export function FiltrosOcorrencias({
               hint="Procura no código da ocorrência, na descrição, na solução e no equipamento."
             />
           </div>
+
+          {/* O erro fica marcado no campo, mas nada mudaria na tela para quem
+              usa leitor: o `Alert` carrega role="alert" e conta que o clique em
+              "Filtrar" não aplicou nada. */}
+          {erroPeriodo && (
+            <Alert tone="danger" className="mt-4">
+              Nenhum filtro foi aplicado: a data final é anterior à data inicial.
+            </Alert>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button type="submit" loading={aplicando}>

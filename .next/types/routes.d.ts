@@ -20,10 +20,10 @@ declare global {
 }
 
 declare namespace VinextRouteTypes {
-  type PageRoute = "/" | "/admin" | "/admin/kits" | "/admin/kits/novo" | "/admin/reservas" | "/admin/reservas/nova" | "/admin/usuarios" | "/admin/usuarios/novo" | "/cadastro" | "/disponibilidade" | "/entrar" | "/inicio" | "/ocorrencias" | "/ocorrencias/nova";
+  type PageRoute = "/" | "/admin" | "/admin/carregadores" | "/admin/configuracoes" | "/admin/kits" | "/admin/kits/[id]" | "/admin/kits/novo" | "/admin/notebooks" | "/admin/notebooks/[id]" | "/admin/notebooks/lote" | "/admin/notebooks/novo" | "/admin/ocorrencias" | "/admin/ocorrencias/[id]" | "/admin/relatorios" | "/admin/reservas" | "/admin/reservas/[id]" | "/admin/reservas/nova" | "/admin/usuarios" | "/admin/usuarios/[id]" | "/admin/usuarios/novo" | "/cadastro" | "/disponibilidade" | "/entrar" | "/inicio" | "/minhas-reservas" | "/minhas-reservas/[id]" | "/ocorrencias" | "/ocorrencias/[id]" | "/ocorrencias/nova" | "/perfil" | "/reservar";
   type LayoutRoute = "/" | "/(admin)" | "/(app)" | "/(publico)";
   type RouteHandlerRoute = "/api/admin/audit-logs" | "/api/admin/dashboard" | "/api/admin/reports" | "/api/admin/settings" | "/api/admin/users" | "/api/admin/users/[id]" | "/api/admin/users/[id]/history" | "/api/admin/users/[id]/reset-password" | "/api/attachments/[id]" | "/api/auth/login" | "/api/auth/logout" | "/api/auth/register" | "/api/availability" | "/api/charger-kits" | "/api/charger-kits/[id]" | "/api/health" | "/api/incidents" | "/api/incidents/[id]" | "/api/incidents/[id]/attachments" | "/api/incidents/[id]/history" | "/api/kits" | "/api/kits/[id]" | "/api/kits/[id]/history" | "/api/me" | "/api/me/password" | "/api/notebooks" | "/api/notebooks/[id]" | "/api/notebooks/[id]/history" | "/api/notebooks/bulk" | "/api/reservations" | "/api/reservations/[id]" | "/api/reservations/[id]/cancel" | "/api/reservations/[id]/close" | "/api/reservations/[id]/history" | "/api/reservations/[id]/whatsapp" | "/api/search";
-  type AppRoute = "/" | "/(admin)" | "/(app)" | "/(publico)" | "/admin" | "/admin/kits" | "/admin/kits/novo" | "/admin/reservas" | "/admin/reservas/nova" | "/admin/usuarios" | "/admin/usuarios/novo" | "/api/admin/audit-logs" | "/api/admin/dashboard" | "/api/admin/reports" | "/api/admin/settings" | "/api/admin/users" | "/api/admin/users/[id]" | "/api/admin/users/[id]/history" | "/api/admin/users/[id]/reset-password" | "/api/attachments/[id]" | "/api/auth/login" | "/api/auth/logout" | "/api/auth/register" | "/api/availability" | "/api/charger-kits" | "/api/charger-kits/[id]" | "/api/health" | "/api/incidents" | "/api/incidents/[id]" | "/api/incidents/[id]/attachments" | "/api/incidents/[id]/history" | "/api/kits" | "/api/kits/[id]" | "/api/kits/[id]/history" | "/api/me" | "/api/me/password" | "/api/notebooks" | "/api/notebooks/[id]" | "/api/notebooks/[id]/history" | "/api/notebooks/bulk" | "/api/reservations" | "/api/reservations/[id]" | "/api/reservations/[id]/cancel" | "/api/reservations/[id]/close" | "/api/reservations/[id]/history" | "/api/reservations/[id]/whatsapp" | "/api/search" | "/cadastro" | "/disponibilidade" | "/entrar" | "/inicio" | "/ocorrencias" | "/ocorrencias/nova";
+  type AppRoute = "/" | "/(admin)" | "/(app)" | "/(publico)" | "/admin" | "/admin/carregadores" | "/admin/configuracoes" | "/admin/kits" | "/admin/kits/[id]" | "/admin/kits/novo" | "/admin/notebooks" | "/admin/notebooks/[id]" | "/admin/notebooks/lote" | "/admin/notebooks/novo" | "/admin/ocorrencias" | "/admin/ocorrencias/[id]" | "/admin/relatorios" | "/admin/reservas" | "/admin/reservas/[id]" | "/admin/reservas/nova" | "/admin/usuarios" | "/admin/usuarios/[id]" | "/admin/usuarios/novo" | "/api/admin/audit-logs" | "/api/admin/dashboard" | "/api/admin/reports" | "/api/admin/settings" | "/api/admin/users" | "/api/admin/users/[id]" | "/api/admin/users/[id]/history" | "/api/admin/users/[id]/reset-password" | "/api/attachments/[id]" | "/api/auth/login" | "/api/auth/logout" | "/api/auth/register" | "/api/availability" | "/api/charger-kits" | "/api/charger-kits/[id]" | "/api/health" | "/api/incidents" | "/api/incidents/[id]" | "/api/incidents/[id]/attachments" | "/api/incidents/[id]/history" | "/api/kits" | "/api/kits/[id]" | "/api/kits/[id]/history" | "/api/me" | "/api/me/password" | "/api/notebooks" | "/api/notebooks/[id]" | "/api/notebooks/[id]/history" | "/api/notebooks/bulk" | "/api/reservations" | "/api/reservations/[id]" | "/api/reservations/[id]/cancel" | "/api/reservations/[id]/close" | "/api/reservations/[id]/history" | "/api/reservations/[id]/whatsapp" | "/api/search" | "/cadastro" | "/disponibilidade" | "/entrar" | "/inicio" | "/minhas-reservas" | "/minhas-reservas/[id]" | "/ocorrencias" | "/ocorrencias/[id]" | "/ocorrencias/nova" | "/perfil" | "/reservar";
 
   interface ParamMap {
     "/": {};
@@ -31,11 +31,23 @@ declare namespace VinextRouteTypes {
     "/(app)": {};
     "/(publico)": {};
     "/admin": {};
+    "/admin/carregadores": {};
+    "/admin/configuracoes": {};
     "/admin/kits": {};
+    "/admin/kits/[id]": { id: string; };
     "/admin/kits/novo": {};
+    "/admin/notebooks": {};
+    "/admin/notebooks/[id]": { id: string; };
+    "/admin/notebooks/lote": {};
+    "/admin/notebooks/novo": {};
+    "/admin/ocorrencias": {};
+    "/admin/ocorrencias/[id]": { id: string; };
+    "/admin/relatorios": {};
     "/admin/reservas": {};
+    "/admin/reservas/[id]": { id: string; };
     "/admin/reservas/nova": {};
     "/admin/usuarios": {};
+    "/admin/usuarios/[id]": { id: string; };
     "/admin/usuarios/novo": {};
     "/api/admin/audit-logs": {};
     "/api/admin/dashboard": {};
@@ -77,8 +89,13 @@ declare namespace VinextRouteTypes {
     "/disponibilidade": {};
     "/entrar": {};
     "/inicio": {};
+    "/minhas-reservas": {};
+    "/minhas-reservas/[id]": { id: string; };
     "/ocorrencias": {};
+    "/ocorrencias/[id]": { id: string; };
     "/ocorrencias/nova": {};
+    "/perfil": {};
+    "/reservar": {};
   }
 
   interface LayoutSlotMap {

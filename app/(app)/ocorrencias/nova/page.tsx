@@ -33,10 +33,15 @@ export default async function NovaOcorrenciaPage({
   const user = await requireUser();
   const sp = await searchParams;
 
-  const notebookId = primeiro(sp.notebookId);
-  const kitId = primeiro(sp.kitId);
-  const chargerKitId = primeiro(sp.chargerKitId);
-  const reservationId = primeiro(sp.reservationId);
+  // Aceitamos o nome técnico e o apelido em português de cada parâmetro. A tela
+  // de detalhe da reserva já linka para cá com `?reserva=<id>`; sem o apelido, o
+  // vínculo com a reserva se perdia em silêncio e o professor precisava
+  // reencontrá-la na lista.
+  const notebookId = primeiro(sp.notebookId) ?? primeiro(sp.notebook);
+  const kitId = primeiro(sp.kitId) ?? primeiro(sp.kit);
+  const chargerKitId =
+    primeiro(sp.chargerKitId) ?? primeiro(sp.carregador) ?? primeiro(sp.kitCarregadores);
+  const reservationId = primeiro(sp.reservationId) ?? primeiro(sp.reserva);
 
   // O alvo mais específico da URL vence: quem vem da tela de um notebook quer
   // falar do notebook, mesmo que a reserva também tenha sido informada. Sem

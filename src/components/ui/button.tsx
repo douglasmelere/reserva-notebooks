@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -37,7 +37,12 @@ const SIZES: Record<ButtonSize, string> = {
   lg: "min-h-12 px-6 text-base gap-2",
 };
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+/**
+ * `ComponentProps<"button">` (e não `ButtonHTMLAttributes`) porque inclui
+ * `ref`: telas que trocam o botão pelo painel que ele abre precisam devolver o
+ * foco para cá quando o painel fecha.
+ */
+export type ButtonProps = ComponentProps<"button"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;

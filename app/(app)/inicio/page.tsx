@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { formatIntervalBR, todayLocal, toLocalTimeString } from "@/lib/datetime";
+import {
+  formatIntervalBR,
+  todayLocal,
+  toLocalTimeString,
+} from "@/lib/datetime";
 import { getAvailability } from "@/server/availability";
 import {
   BLOCKING_STATUSES,
@@ -52,7 +56,9 @@ const STATUS_TONE: Record<ReservationStatus, BadgeTone> = {
  * a janela cruzaria o dia e o serviço recusaria o intervalo — nesse caso
  * voltamos para a consulta de dia inteiro.
  */
-function janelaAgora(agora: Date): { startTime: string; endTime: string } | null {
+function janelaAgora(
+  agora: Date,
+): { startTime: string; endTime: string } | null {
   const partes = toLocalTimeString(agora).split(":");
   const inicio = Number(partes[0] ?? 0) * 60 + Number(partes[1] ?? 0);
   const fim = inicio + 30;
@@ -137,13 +143,21 @@ export default async function InicioPage() {
                 <span className="min-w-0">
                   <span className="font-semibold">{reserva.code}</span>
                   {" — "}
-                  {formatIntervalBR(reserva.startsAt, reserva.endsAt, reserva.allDay)}
+                  {formatIntervalBR(
+                    reserva.startsAt,
+                    reserva.endsAt,
+                    reserva.allDay,
+                  )}
                 </span>
+                {/* O código já aparece ao lado; repeti-lo no botão só alonga o
+                    alvo em 360px. Fica no `sr-only` para que cada link da
+                    lista continue tendo um nome próprio. */}
                 <Link
                   href={`/minhas-reservas/${reserva.id}`}
-                  className="inline-flex min-h-11 items-center rounded-lg bg-amber-700 px-4 text-sm font-medium text-white hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-amber-700 px-4 text-sm font-medium text-white hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
                 >
-                  Encerrar reserva {reserva.code}
+                  Encerrar
+                  <span className="sr-only"> a reserva {reserva.code}</span>
                 </Link>
               </li>
             ))}
@@ -264,39 +278,59 @@ export default async function InicioPage() {
             ) : (
               // Cartões empilhados em vez de tabela: são seis informações por
               // reserva, e no celular isso viraria uma tabela ilegível.
-              <ul className="flex flex-col gap-3">
-                {proximas.slice(0, 6).map((reserva) => (
-                  <li key={reserva.id}>
-                    <Link
-                      href={`/minhas-reservas/${reserva.id}`}
-                      className="block rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-semibold text-slate-900">
-                          {formatIntervalBR(
-                            reserva.startsAt,
-                            reserva.endsAt,
-                            reserva.allDay,
-                          )}
+              <>
+                <ul className="flex flex-col gap-3">
+                  {proximas.slice(0, 6).map((reserva) => (
+                    <li key={reserva.id}>
+                      <Link
+                        href={`/minhas-reservas/${reserva.id}`}
+                        className="block rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-semibold text-slate-900">
+                            {formatIntervalBR(
+                              reserva.startsAt,
+                              reserva.endsAt,
+                              reserva.allDay,
+                            )}
+                          </p>
+                          <Badge tone={STATUS_TONE[reserva.status]}>
+                            {RESERVATION_STATUS_LABEL[reserva.status]}
+                          </Badge>
+                        </div>
+
+                        <p className="mt-1 text-sm text-slate-700">
+                          {recursosDaReserva(reserva).join(" · ")}
                         </p>
-                        <Badge tone={STATUS_TONE[reserva.status]}>
-                          {RESERVATION_STATUS_LABEL[reserva.status]}
-                        </Badge>
-                      </div>
 
-                      <p className="mt-1 text-sm text-slate-700">
-                        {recursosDaReserva(reserva).join(" · ")}
-                      </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Código {reserva.code}
+                          {reserva.room ? ` · Sala ${reserva.room}` : ""}
+                          {reserva.className
+                            ? ` · Turma ${reserva.className}`
+                            : ""}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        Código {reserva.code}
-                        {reserva.room ? ` · Sala ${reserva.room}` : ""}
-                        {reserva.className ? ` · Turma ${reserva.className}` : ""}
-                      </p>
+                {/* Sem esta linha, a lista cortada em seis passa a impressão de
+                  que o professor não tem mais nada marcado. */}
+                {proximas.length > 6 && (
+                  <p className="mt-3 text-sm text-slate-600">
+                    Mostrando as 6 primeiras de {proximas.length} reservas
+                    ativas.{" "}
+                    <Link
+                      href="/minhas-reservas"
+                      className="font-medium text-sky-700 underline"
+                    >
+                      Ver todas as suas reservas
                     </Link>
-                  </li>
-                ))}
-              </ul>
+                    .
+                  </p>
+                )}
+              </>
             )}
           </CardBody>
         </Card>

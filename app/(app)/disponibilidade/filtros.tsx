@@ -40,8 +40,13 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
   const [form, setForm] = useState<FiltrosValores>(valores);
+  const [erroHorario, setErroHorario] = useState<string | null>(null);
+  // Qual botão disparou a navegação: os dois usam a mesma transição, mas
+  // girar os dois ao mesmo tempo não diria qual ação está em andamento.
+  const [acao, setAcao] = useState<"aplicar" | "limpar" | null>(null);
 
-  function navegar(proximo: FiltrosValores) {
+  function navegar(proximo: FiltrosValores, origem: "aplicar" | "limpar") {
+    setAcao(origem);
     const url = `/disponibilidade${queryString({
       date: proximo.date,
       startTime: proximo.startTime,
@@ -59,13 +64,24 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
 
   function aplicar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    navegar(form);
+
+    // O servidor recusa fim <= início. Barrar aqui evita a ida ao servidor e
+    // aponta o campo errado, em vez de devolver a tela com um aviso solto.
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) {
+      setErroHorario(
+        "O horário final deve ser depois do inicial. Ajuste o campo “Às” ou apague os dois para consultar o dia inteiro.",
+      );
+      return;
+    }
+
+    setErroHorario(null);
+    navegar(form, "aplicar");
   }
 
   function trocarVisao(view: VisaoDisponibilidade) {
     const proximo = { ...form, view };
     setForm(proximo);
-    navegar(proximo);
+    navegar(proximo, "aplicar");
   }
 
   function limpar() {
@@ -79,14 +95,19 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
       search: "",
       view: form.view,
     };
+    setErroHorario(null);
     setForm(proximo);
-    navegar(proximo);
+    navegar(proximo, "limpar");
   }
 
   const atualizar = <K extends keyof FiltrosValores>(
     campo: K,
     valor: FiltrosValores[K],
-  ) => setForm((atual) => ({ ...atual, [campo]: valor }));
+  ) => {
+    // Mexeu no horário, o aviso antigo já não descreve o que está na tela.
+    if (campo === "startTime" || campo === "endTime") setErroHorario(null);
+    setForm((atual) => ({ ...atual, [campo]: valor }));
+  };
 
   return (
     <Card className="mb-4">
@@ -142,9 +163,10 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
             />
 
             <TextField
-              label="Até"
+              label="Às"
               type="time"
               value={form.endTime}
+              error={erroHorario}
               onChange={(e) => atualizar("endTime", e.target.value)}
               hint="Deixe em branco para o dia inteiro"
             />
@@ -191,19 +213,30 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="submit" loading={pendente}>
+            <Button type="submit" loading={pendente && acao === "aplicar"}>
               Aplicar filtros
             </Button>
-            <Button type="button" variant="ghost" onClick={limpar}>
+            <Button
+              type="button"
+              variant="ghost"
+              loading={pendente && acao === "limpar"}
+              onClick={limpar}
+            >
               Limpar filtros
             </Button>
           </div>
         </form>
 
         {/* A lista abaixo troca sozinha quando a navegação termina; sem este
-            aviso, quem usa leitor de tela não perceberia a atualização. */}
+            aviso, quem usa leitor de tela não perceberia a atualização. O
+            `acao` segura a mensagem final: sem ele, a região anunciaria algo
+            já na primeira renderização, antes de qualquer filtro. */}
         <p aria-live="polite" className="mt-2 text-xs text-slate-600">
-          {pendente ? "Atualizando a disponibilidade..." : ""}
+          {pendente
+            ? "Atualizando a disponibilidade..."
+            : acao
+              ? "Disponibilidade atualizada com os filtros escolhidos."
+              : ""}
         </p>
       </CardBody>
     </Card>

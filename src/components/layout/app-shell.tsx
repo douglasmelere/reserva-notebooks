@@ -50,7 +50,13 @@ export function AppShell({
         Pular para o conteúdo
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+      {/*
+        O cabeçalho fica acima do painel (z-40) e do fundo escurecido (z-30):
+        o botão que abre o menu é o MESMO que o fecha, e com z-index igual ao
+        do fundo ele ficava coberto — no celular dava para abrir o menu e não
+        dava para fechá-lo pelo ✕.
+      */}
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"

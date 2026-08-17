@@ -163,7 +163,11 @@ export default async function AdminOcorrenciasPage({
                 pagina: undefined,
               })}
               aria-current={ativo ? "true" : undefined}
-              className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+              // O anel reforça o cartão ativo para quem enxerga; quem não
+              // enxerga tem o `aria-current` e a dica escrita dentro do cartão.
+              className={`block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
+                ativo ? "ring-2 ring-sky-700 ring-offset-2" : ""
+              }`}
             >
               <Stat
                 label={`Severidade ${INCIDENT_SEVERITY_LABEL[severidade]}`}
@@ -194,6 +198,14 @@ export default async function AdminOcorrenciasPage({
         />
       </div>
 
+      {/* Filtrar troca a lista sem sair da tela: sem esta região o leitor de
+          tela não teria como saber que o resultado mudou. */}
+      <p role="status" className="sr-only">
+        {resultado.total === 1
+          ? "1 ocorrência encontrada com os filtros atuais."
+          : `${resultado.total} ocorrências encontradas com os filtros atuais.`}
+      </p>
+
       <Card className="mt-4">
         <CardHeader
           title={
@@ -205,10 +217,25 @@ export default async function AdminOcorrenciasPage({
         />
         <CardBody>
           {itens.length === 0 ? (
-            <EmptyState
-              title="Nenhuma ocorrência com esses filtros"
-              description="Amplie o período, limpe a busca ou tire o filtro de status. Se a fila está mesmo vazia, não há nada pendente de análise no recorte escolhido."
-            />
+            // `?pagina=` é escrita na URL e pode passar da última página: aí a
+            // fila tem resultado, mas esta página não — e mandar "amplie o
+            // período" seria conselho errado.
+            resultado.total > 0 ? (
+              <EmptyState
+                title="Esta página não tem ocorrências"
+                description={`O recorte atual vai até a página ${totalPaginas}. Volte para a primeira página para ver a fila.`}
+                action={
+                  <Link href={comFiltros({ pagina: undefined })} className={BOTAO_SECUNDARIO}>
+                    Ir para a primeira página
+                  </Link>
+                }
+              />
+            ) : (
+              <EmptyState
+                title="Nenhuma ocorrência com esses filtros"
+                description="Amplie o período, limpe a busca ou tire o filtro de situação. Se a fila está mesmo vazia, não há nada pendente de análise no recorte escolhido."
+              />
+            )
           ) : (
             <>
               {/* Celular: cartão por ocorrência. A tabela tem colunas demais
@@ -335,7 +362,7 @@ function CartaoOcorrencia({ ocorrencia }: { ocorrencia: IncidentDTO }) {
         <Badge tone={TOM_STATUS[ocorrencia.status]}>{ocorrencia.statusLabel}</Badge>
         {ocorrencia.recursoBloqueado && <Badge tone="danger">Bloqueado</Badge>}
       </div>
-      <p className="mt-2 text-sm font-semibold text-slate-900">
+      <p className="mt-2 text-sm font-semibold break-words text-slate-900">
         {ocorrencia.code} · {ocorrencia.alvoLabel}
       </p>
       <p className="text-sm text-slate-600">

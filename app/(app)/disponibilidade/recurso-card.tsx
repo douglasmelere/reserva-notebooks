@@ -97,7 +97,9 @@ export function RecursoCard({ recurso }: { recurso: Recurso }) {
 
       <div className="px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <h3 className="min-w-0 text-sm font-semibold text-slate-900">
+          {/* Nome de kit cadastrado sem espaço ("MaletaInformatica-Bloco-B")
+              estouraria o cartão sem o `break-words`. */}
+          <h3 className="min-w-0 text-sm font-semibold break-words text-slate-900">
             {titulo}
           </h3>
           <Badge tone={estado.tone}>
@@ -114,11 +116,14 @@ export function RecursoCard({ recurso }: { recurso: Recurso }) {
           <p className="mt-1 text-xs text-slate-600">
             Carregadores: {recurso.chargerKit.availableQuantity} de{" "}
             {recurso.chargerKit.totalQuantity}
-            {recurso.chargerKit.completo ? " (kit completo)" : " (kit incompleto)"}
+            {recurso.chargerKit.completo
+              ? " (kit completo)"
+              : " (kit incompleto)"}
           </p>
         )}
 
-        {(recurso.state === "MANUTENCAO" || recurso.state === "INDISPONIVEL") && (
+        {(recurso.state === "MANUTENCAO" ||
+          recurso.state === "INDISPONIVEL") && (
           <p className="mt-2 text-xs text-slate-600">
             Situação no cadastro: {recurso.statusLabel}. Este equipamento não
             pode ser reservado até a supervisão liberá-lo.
@@ -127,9 +132,10 @@ export function RecursoCard({ recurso }: { recurso: Recurso }) {
 
         {ocupado && (
           <>
+            {/* Tamanho padrão (44px de altura): é o alvo de toque mínimo, e
+                este botão é tocado no celular, em pé no corredor. */}
             <Button
               variant="outline"
-              size="sm"
               className="mt-3"
               aria-expanded={aberto}
               aria-controls={painelId}
@@ -138,6 +144,9 @@ export function RecursoCard({ recurso }: { recurso: Recurso }) {
               {aberto
                 ? "Ocultar quem está com o equipamento"
                 : "Ver quem está com o equipamento"}
+              {/* A tela repete este botão em cada cartão; sem o nome, quem
+                  navega pela lista de botões ouve tudo igual. */}
+              <span className="sr-only"> — {titulo}</span>
             </Button>
 
             <div id={painelId} hidden={!aberto} className="mt-3">
@@ -166,11 +175,13 @@ function Ocupante({ ocupacao }: { ocupacao: Occupation }) {
   const [carregando, setCarregando] = useState(false);
   const [motivo, setMotivo] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [linkAberto, setLinkAberto] = useState<string | null>(null);
 
   async function contatar() {
     setCarregando(true);
     setErro(null);
     setMotivo(null);
+    setLinkAberto(null);
     try {
       const resposta = await api.post<ContatoResposta>(
         `/api/reservations/${ocupacao.reservationId}/whatsapp`,
@@ -178,6 +189,11 @@ function Ocupante({ ocupacao }: { ocupacao: Occupation }) {
       if (resposta.disponivel) {
         // `noopener` impede que a aba do WhatsApp acesse esta janela.
         window.open(resposta.url, "_blank", "noopener");
+        // Com `noopener` o navegador devolve `null` mesmo quando a aba abriu,
+        // então não dá para saber se o bloqueador de pop-up barrou. Em vez de
+        // deixar o professor olhando para uma tela que não mudou, mostramos o
+        // link para ele abrir na mão.
+        setLinkAberto(resposta.url);
       } else {
         setMotivo(resposta.motivo);
       }
@@ -194,18 +210,26 @@ function Ocupante({ ocupacao }: { ocupacao: Occupation }) {
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
-      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
+      {/* `minmax(0,1fr)` na segunda coluna: com `1fr` puro o conteúdo define o
+          mínimo da coluna e um nome longo empurraria o cartão para fora. */}
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
         <dt className="font-medium text-slate-600">Professor(a)</dt>
-        <dd className="text-slate-900">{ocupacao.holder.fullName}</dd>
+        <dd className="break-words text-slate-900">
+          {ocupacao.holder.fullName}
+        </dd>
 
         <dt className="font-medium text-slate-600">Período</dt>
-        <dd className="text-slate-900">{ocupacao.periodoFormatado}</dd>
+        <dd className="break-words text-slate-900">
+          {ocupacao.periodoFormatado}
+        </dd>
 
         <dt className="font-medium text-slate-600">Sala</dt>
-        <dd className="text-slate-900">{ocupacao.room ?? "Não informada"}</dd>
+        <dd className="break-words text-slate-900">
+          {ocupacao.room ?? "Não informada"}
+        </dd>
 
         <dt className="font-medium text-slate-600">Finalidade</dt>
-        <dd className="text-slate-900">
+        <dd className="break-words text-slate-900">
           {ocupacao.purpose ?? "Não informada"}
         </dd>
       </dl>
@@ -214,12 +238,12 @@ function Ocupante({ ocupacao }: { ocupacao: Occupation }) {
         <div className="mt-3">
           <Button
             variant="secondary"
-            size="sm"
             loading={carregando}
             onClick={contatar}
             icon={<span aria-hidden="true">💬</span>}
           >
             Entrar em contato via WhatsApp
+            <span className="sr-only"> com {ocupacao.holder.fullName}</span>
           </Button>
           <p className="mt-2 text-xs text-slate-600">
             O contato abre uma conversa no WhatsApp com a mensagem já escrita.
@@ -237,8 +261,25 @@ function Ocupante({ ocupacao }: { ocupacao: Occupation }) {
       )}
 
       {/* Respostas assíncronas precisam ser anunciadas: o retorno pode ser só
-          um texto novo, sem mudança de foco. */}
-      <div aria-live="polite" className="empty:hidden">
+          um texto novo, sem mudança de foco. Quem anuncia é o próprio `Alert`
+          (`role="alert"`/`role="status"`) — um `aria-live` aqui aninharia duas
+          regiões vivas e o leitor de tela leria a mensagem duas vezes. */}
+      <div>
+        {linkAberto && (
+          <Alert tone="success" className="mt-3">
+            Abrimos a conversa no WhatsApp em outra aba. Se nada apareceu, o
+            navegador pode ter bloqueado a janela —{" "}
+            <a
+              href={linkAberto}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+            >
+              abra a conversa por aqui
+            </a>
+            .
+          </Alert>
+        )}
         {motivo && (
           <Alert tone="info" className="mt-3">
             {motivo}

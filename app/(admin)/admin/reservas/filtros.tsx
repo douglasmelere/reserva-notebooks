@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { FormEvent } from "react";
 import type { ReservationStatus } from "@/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,6 @@ export function Filtros({
 }) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
-  const legendaId = useId();
 
   const [form, setForm] = useState<ValoresDeFiltro>(valores);
 
@@ -177,7 +176,7 @@ export function Filtros({
           </div>
 
           <fieldset className="rounded-lg border border-slate-200 p-3">
-            <legend id={legendaId} className="px-1 text-sm font-medium text-slate-700">
+            <legend className="px-1 text-sm font-medium text-slate-700">
               Situação da reserva
             </legend>
             <p className="px-1 pb-2 text-xs text-slate-500">

@@ -1,11 +1,17 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { RESERVATION_STATUS_LABEL } from "@/server/reservation-policy";
 import { Button } from "@/components/ui/button";
 import { SelectField, TextField } from "@/components/ui/field";
-import { Card, CardBody } from "@/components/ui/primitives";
+import { Alert, Card, CardBody } from "@/components/ui/primitives";
+
+/** "2026-08-17" → "17/08/2026". Sem fuso: é só reordenar o texto. */
+function dataBR(valor: string): string {
+  const [ano, mes, dia] = valor.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : valor;
+}
 
 /**
  * Filtros e paginação de "Minhas reservas".
@@ -16,6 +22,11 @@ import { Card, CardBody } from "@/components/ui/primitives";
  * renderizada no servidor.
  */
 
+/**
+ * `@/server/reservation-policy` é seguro no navegador: ele só depende de
+ * `@/lib/errors` e `@/lib/datetime`, sem Prisma nem módulos do Node. Importar
+ * os rótulos daqui evita a lista de situações divergir da usada pela API.
+ */
 const OPCOES_SITUACAO = [
   { value: "ativas", label: "Somente as ativas" },
   ...Object.entries(RESERVATION_STATUS_LABEL).map(([valor, rotulo]) => ({
@@ -55,6 +66,9 @@ export function FiltrosDeReservas({
   }
 
   const temFiltro = Boolean(situacao || de || ate);
+  // Um período invertido devolve zero resultados sem explicar o motivo; o aviso
+  // aponta o campo a corrigir em vez de deixar a lista misteriosamente vazia.
+  const periodoInvertido = Boolean(de && ate && de > ate);
 
   return (
     <Card className="mb-4">
@@ -87,11 +101,17 @@ export function FiltrosDeReservas({
           />
         </div>
 
+        {periodoInvertido && (
+          <Alert tone="warning" title="Período invertido" className="mt-3">
+            A data inicial ({dataBR(de)}) é posterior à final ({dataBR(ate)}),
+            então nenhuma reserva pode aparecer. Troque uma das duas datas.
+          </Alert>
+        )}
+
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {temFiltro && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={() => aplicar({ status: "", de: "", ate: "" })}
             >
               Limpar filtros
@@ -117,15 +137,19 @@ export function PaginacaoDeReservas({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pendente, iniciarTransicao] = useTransition();
+  // Guarda qual botão disparou a troca: assim a espera aparece no botão que o
+  // professor tocou, e não nos dois ao mesmo tempo.
+  const [indoPara, setIndoPara] = useState<"anterior" | "proxima" | null>(null);
 
   if (totalPaginas <= 1) return null;
 
-  function ir(destino: number) {
+  function ir(destino: number, direcao: "anterior" | "proxima") {
     const parametros = new URLSearchParams(searchParams.toString());
     if (destino <= 1) parametros.delete("pagina");
     else parametros.set("pagina", String(destino));
 
     const consulta = parametros.toString();
+    setIndoPara(direcao);
     iniciarTransicao(() => {
       router.push(consulta ? `${pathname}?${consulta}` : pathname);
     });
@@ -138,18 +162,20 @@ export function PaginacaoDeReservas({
     >
       <Button
         variant="outline"
-        onClick={() => ir(pagina - 1)}
+        onClick={() => ir(pagina - 1, "anterior")}
         disabled={pagina <= 1 || pendente}
+        loading={pendente && indoPara === "anterior"}
       >
         Página anterior
       </Button>
       <p aria-live="polite" className="text-sm text-slate-600">
-        Página {pagina} de {totalPaginas}
+        {pendente ? "Carregando a página..." : `Página ${pagina} de ${totalPaginas}`}
       </p>
       <Button
         variant="outline"
-        onClick={() => ir(pagina + 1)}
+        onClick={() => ir(pagina + 1, "proxima")}
         disabled={pagina >= totalPaginas || pendente}
+        loading={pendente && indoPara === "proxima"}
       >
         Próxima página
       </Button>

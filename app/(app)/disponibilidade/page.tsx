@@ -4,6 +4,7 @@ import { getAvailability, getOccupancyByDay } from "@/server/availability";
 import type { DayOccupancy } from "@/server/availability";
 import type { KitType } from "@/generated/prisma/enums";
 import {
+  Alert,
   Badge,
   Card,
   CardBody,
@@ -111,6 +112,16 @@ function listarDias(de: string, ate: string): string[] {
   return dias;
 }
 
+/**
+ * "1 kit livre" / "2 kits livres".
+ *
+ * O "(s)" de formulário de papel ("2 kit(s) livre(s)") atrapalha a leitura e
+ * soa burocrático numa tela que o professor consulta correndo entre aulas.
+ */
+function plural(quantidade: number, singular: string, muitos: string): string {
+  return `${quantidade} ${quantidade === 1 ? singular : muitos}`;
+}
+
 export default async function DisponibilidadePage({
   searchParams,
 }: {
@@ -142,11 +153,21 @@ export default async function DisponibilidadePage({
   // Horário só pela metade é ignorado: o serviço exige as duas pontas, e
   // recusar a consulta por isso deixaria a tela vazia sem explicação.
   const intervaloCompleto = Boolean(startTime && endTime);
+  const soUmHorario = Boolean(startTime) !== Boolean(endTime);
+
+  // Fim antes do início faz `reservationInterval` lançar, e como o link é
+  // compartilhável qualquer pessoa pode chegar aqui com `?startTime=14:00&
+  // endTime=09:00`. Deixar estourar trocaria a tela inteira pela página de
+  // erro genérica; aqui a consulta cai para o dia inteiro e o aviso abaixo diz
+  // o que corrigir. Horas "HH:MM" com zero à esquerda comparam como texto.
+  const intervaloInvertido =
+    intervaloCompleto && (endTime as string) <= (startTime as string);
+  const usarHorario = intervaloCompleto && !intervaloInvertido;
 
   const disponibilidade = await getAvailability({
     date,
-    startTime: intervaloCompleto ? startTime : null,
-    endTime: intervaloCompleto ? endTime : null,
+    startTime: usarHorario ? startTime : null,
+    endTime: usarHorario ? endTime : null,
     kitType,
     location,
     minCapacity,
@@ -212,6 +233,21 @@ export default async function DisponibilidadePage({
     return query ? `/disponibilidade?${query}` : "/disponibilidade";
   }
 
+  // "Anterior"/"Próximo" sozinhos não dizem anterior a quê — quem navega pela
+  // lista de links do leitor de tela ouviria só isso.
+  const rotuloAnterior =
+    view === "dia"
+      ? "Dia anterior"
+      : view === "semana"
+        ? "Semana anterior"
+        : "Mês anterior";
+  const rotuloSeguinte =
+    view === "dia"
+      ? "Próximo dia"
+      : view === "semana"
+        ? "Próxima semana"
+        : "Próximo mês";
+
   const tituloDoPeriodo =
     view === "dia"
       ? `${DIAS_SEMANA[indiceDiaSemana(date)]}, ${formatDateBR(meioDiaDe(date))}`
@@ -243,37 +279,56 @@ export default async function DisponibilidadePage({
         }}
       />
 
+      {soUmHorario && (
+        <Alert tone="info" className="mb-4">
+          Você preencheu só um dos horários, então a consulta abaixo está
+          mostrando o <strong>dia inteiro</strong>. Preencha “Das” e “Às” para
+          ver o que fica livre em um horário específico.
+        </Alert>
+      )}
+
+      {intervaloInvertido && (
+        <Alert
+          tone="warning"
+          title="Horário final antes do inicial"
+          className="mb-4"
+        >
+          O horário “Às {endTime}” vem antes de “Das {startTime}”, então a
+          consulta abaixo está mostrando o <strong>dia inteiro</strong>. Corrija
+          o horário final nos filtros para filtrar por um intervalo.
+        </Alert>
+      )}
+
+      {/* Em 360px os dois botões e o título não cabem na mesma linha; o título
+          sobe para uma linha própria e os botões dividem a de baixo, em vez de
+          o "Próximo" ser jogado sozinho para a esquerda pelo flex-wrap. */}
       <nav
         aria-label="Navegação entre períodos"
-        className="mb-4 flex flex-wrap items-center justify-between gap-2"
+        className="mb-4 grid grid-cols-2 items-center gap-2 sm:grid-cols-[auto_1fr_auto]"
       >
-        <Link
-          href={comFiltros({ date: dataAnterior })}
-          className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <span aria-hidden="true">←</span>
-          <span className="ml-2">Anterior</span>
-        </Link>
-
-        <h2 className="text-center text-sm font-semibold text-slate-900 sm:text-base">
+        <h2 className="order-1 col-span-2 text-sm font-semibold text-slate-900 sm:order-2 sm:col-span-1 sm:text-center sm:text-base">
           {tituloDoPeriodo}
         </h2>
 
         <Link
-          href={comFiltros({ date: dataSeguinte })}
-          className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          href={comFiltros({ date: dataAnterior })}
+          className="order-2 inline-flex min-h-11 items-center justify-self-start rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 sm:order-1"
         >
-          <span className="mr-2">Próximo</span>
+          <span aria-hidden="true">←</span>
+          <span className="ml-2">{rotuloAnterior}</span>
+        </Link>
+
+        <Link
+          href={comFiltros({ date: dataSeguinte })}
+          className="order-3 inline-flex min-h-11 items-center justify-self-end rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 sm:order-3"
+        >
+          <span className="mr-2">{rotuloSeguinte}</span>
           <span aria-hidden="true">→</span>
         </Link>
       </nav>
 
       {view === "dia" ? (
-        <VisaoDia
-          disponibilidade={disponibilidade}
-          date={date}
-          hoje={hoje}
-        />
+        <VisaoDia disponibilidade={disponibilidade} date={date} hoje={hoje} />
       ) : (
         <>
           {/* Resumo do dia escolhido no filtro: a grade responde "que dias estão
@@ -285,9 +340,18 @@ export default async function DisponibilidadePage({
                 {date === hoje ? " (hoje)" : ""}
               </span>
               {" — "}
-              {disponibilidade.resumo.kitsDisponiveis} kit(s) livre(s) e{" "}
-              {disponibilidade.resumo.notebooksDisponiveis} notebook(s) avulso(s)
-              livre(s) em {disponibilidade.periodo.formatado}.
+              {plural(
+                disponibilidade.resumo.kitsDisponiveis,
+                "kit livre",
+                "kits livres",
+              )}{" "}
+              e{" "}
+              {plural(
+                disponibilidade.resumo.notebooksDisponiveis,
+                "notebook avulso livre",
+                "notebooks avulsos livres",
+              )}{" "}
+              em {disponibilidade.periodo.formatado}.
             </p>
             <Link
               href={comFiltros({ view: "dia" })}
@@ -368,7 +432,7 @@ function VisaoDia({
         <Card>
           <CardHeader
             title={<span id="lista-kits">Maletas e carrinhos</span>}
-            description={`${kits.length} equipamento(s) encontrado(s) com os filtros atuais.`}
+            description={`${plural(kits.length, "equipamento encontrado", "equipamentos encontrados")} com os filtros atuais.`}
           />
           <CardBody>
             {kits.length === 0 ? (
@@ -393,7 +457,7 @@ function VisaoDia({
         <Card>
           <CardHeader
             title={<span id="lista-notebooks">Notebooks avulsos</span>}
-            description="Notebooks que não pertencem a nenhuma maleta ou carrinho."
+            description={`${plural(notebooks.length, "notebook encontrado", "notebooks encontrados")} com os filtros atuais. Os que ficam dentro de uma maleta ou carrinho aparecem junto com o kit, na lista acima.`}
           />
           <CardBody>
             {notebooks.length === 0 ? (
@@ -427,22 +491,32 @@ function Legenda() {
   ];
 
   return (
-    <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600">
-      {itens.map((item) => (
-        <li key={item.rotulo} className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className={`inline-block size-3 rounded-full ${item.cor}`}
-          />
-          <span>
-            <strong className="font-semibold text-slate-800">
-              {item.rotulo}
-            </strong>{" "}
-            — {item.texto}
-          </span>
-        </li>
-      ))}
-    </ul>
+    // Sem o título, o leitor de tela anuncia só "lista de 4 itens" e a legenda
+    // chega sem contexto nenhum.
+    <section aria-labelledby="legenda-situacoes" className="mt-4">
+      <h2
+        id="legenda-situacoes"
+        className="text-xs font-semibold tracking-wide text-slate-500 uppercase"
+      >
+        O que cada situação significa
+      </h2>
+      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600">
+        {itens.map((item) => (
+          <li key={item.rotulo} className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className={`inline-block size-3 shrink-0 rounded-full ${item.cor}`}
+            />
+            <span>
+              <strong className="font-semibold text-slate-800">
+                {item.rotulo}
+              </strong>{" "}
+              — {item.texto}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -474,7 +548,7 @@ function VisaoCalendario({
     <Card>
       <CardHeader
         title="Ocupação por dia"
-        description="Toque em um dia para ver, item por item, o que está livre nele."
+        description="Escolha um dia para ver, item por item, o que está livre nele."
       />
       <CardBody>
         {dias.length === 0 ? (
@@ -485,10 +559,12 @@ function VisaoCalendario({
         ) : (
           <>
             {/* Cabeçalho de dias só faz sentido na grade de sete colunas; no
-                celular a lista é vertical e cada cartão traz o próprio dia. */}
+                celular a lista é vertical e cada cartão traz o próprio dia.
+                A grade começa em `md`: em 640px cada uma das sete colunas
+                ficaria com ~78px e o selo de status transbordaria da célula. */}
             <div
               aria-hidden="true"
-              className="hidden grid-cols-7 gap-2 pb-2 sm:grid"
+              className="hidden grid-cols-7 gap-2 pb-2 md:grid"
             >
               {DIAS_SEMANA_CURTO.map((dia) => (
                 <div
@@ -500,12 +576,12 @@ function VisaoCalendario({
               ))}
             </div>
 
-            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-7">
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-7">
               {Array.from({ length: vazios }).map((_, indice) => (
                 <li
                   key={`vazio-${indice}`}
                   aria-hidden="true"
-                  className="hidden sm:block"
+                  className="hidden md:block"
                 />
               ))}
 
@@ -524,11 +600,15 @@ function VisaoCalendario({
                         "flex min-h-20 flex-col justify-between rounded-lg border p-2 transition-colors",
                         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700",
                         selecionado
-                          ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
+                          ? // Anel mais grosso além da cor: quem não distingue
+                            // azul de cinza percebe a espessura da borda.
+                            "border-sky-600 bg-sky-50 ring-2 ring-sky-600"
                           : "border-slate-200 bg-white hover:bg-slate-50",
                       ].join(" ")}
                     >
-                      <span className="flex items-baseline justify-between gap-2">
+                      {/* `flex-wrap`: numa coluna de ~95px a data e o dia da
+                          semana não cabem lado a lado. */}
+                      <span className="flex flex-wrap items-baseline gap-x-2">
                         <span className="text-sm font-semibold text-slate-900">
                           {formatDateBR(meioDiaDe(dia)).slice(0, 5)}
                         </span>
@@ -540,18 +620,24 @@ function VisaoCalendario({
 
                       <span className="mt-2 block">
                         {reservas === 0 ? (
-                          <Badge tone="success">Sem reservas</Badge>
+                          // "Livre" no lugar de "Sem reservas": o selo não
+                          // quebra linha e o texto longo vazava da célula.
+                          <Badge tone="success">Livre</Badge>
                         ) : (
                           <Badge tone="info">
-                            {reservas} reserva{reservas > 1 ? "s" : ""}
+                            {plural(reservas, "reserva", "reservas")}
                           </Badge>
                         )}
                       </span>
 
-                      {info && (
+                      {info && reservas > 0 && (
                         <span className="mt-1 block text-xs text-slate-600">
-                          {info.kitsOcupados} kit(s) ·{" "}
-                          {info.notebooksOcupados} notebook(s)
+                          {plural(info.kitsOcupados, "kit", "kits")} ·{" "}
+                          {plural(
+                            info.notebooksOcupados,
+                            "notebook",
+                            "notebooks",
+                          )}
                         </span>
                       )}
                     </Link>

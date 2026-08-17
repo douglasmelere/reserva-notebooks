@@ -303,38 +303,41 @@ export function FormularioDeLote({ kits }: { kits: KitParaLote[] }) {
           />
         </div>
 
-        {/* Região viva: o leitor de tela anuncia a faixa recalculada sem que o
-            usuário precise procurar a informação. */}
-        <div
-          aria-live="polite"
-          className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-        >
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-800">
             Prévia dos patrimônios
           </h3>
-          {previa === null ? (
-            <p className="mt-1 text-sm text-slate-600">
-              Preencha prefixo, número inicial e quantidade para ver exatamente
-              o que será gerado.
-            </p>
-          ) : (
-            <>
-              <p className="mt-1 text-sm text-slate-700">
-                Serão criados <strong>{previa.length}</strong> equipamento(s):{" "}
-                <span className="font-mono">{previa[0]}</span> …{" "}
-                <span className="font-mono">{previa[previa.length - 1]}</span>
-              </p>
-              <ul className="mt-2 flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
-                {previa.map((patrimonio) => (
-                  <li
-                    key={patrimonio}
-                    className="rounded bg-white px-2 py-1 font-mono text-xs text-slate-700 ring-1 ring-slate-200 ring-inset"
-                  >
-                    {patrimonio}
-                  </li>
-                ))}
-              </ul>
-            </>
+
+          {/* Só o resumo é região viva. A lista completa chega a 100 itens: se
+              ela estivesse dentro do `aria-live`, o leitor de tela releria os
+              100 patrimônios a cada tecla digitada no prefixo. A lista continua
+              logo abaixo, acessível pela navegação normal. */}
+          <p aria-live="polite" className="mt-1 text-sm text-slate-700">
+            {previa === null ? (
+              <span className="text-slate-600">
+                Preencha prefixo, número inicial e quantidade para ver
+                exatamente o que será gerado.
+              </span>
+            ) : (
+              <>
+                Serão criados <strong>{previa.length}</strong> equipamento(s), de{" "}
+                <span className="font-mono">{previa[0]}</span> a{" "}
+                <span className="font-mono">{previa[previa.length - 1]}</span>.
+              </>
+            )}
+          </p>
+
+          {previa !== null && (
+            <ul className="mt-2 flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
+              {previa.map((patrimonio) => (
+                <li
+                  key={patrimonio}
+                  className="rounded bg-white px-2 py-1 font-mono text-xs text-slate-700 ring-1 ring-slate-200 ring-inset"
+                >
+                  {patrimonio}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 

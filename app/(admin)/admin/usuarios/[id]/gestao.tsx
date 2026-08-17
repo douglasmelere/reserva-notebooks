@@ -54,12 +54,22 @@ const ESTADO_INICIAL: Estado = {
 
 type RespostaUsuario = { usuario: UsuarioGerenciado; mensagem?: string };
 
-/** Executa uma ação da API mantendo estado de carregamento, erro e sucesso. */
+/**
+ * Executa uma ação da API mantendo estado de carregamento, erro e sucesso.
+ *
+ * `aoTerminar` roda no `finally`, e não só no caminho feliz: é o que fecha o
+ * diálogo de confirmação. Fechá-lo apenas em caso de sucesso deixaria a
+ * mensagem de erro renderizada ATRÁS do modal, invisível e inalcançável — a
+ * pessoa veria o botão parar de girar sem nenhuma explicação.
+ */
 function useAcao() {
   const router = useRouter();
   const [estado, setEstado] = useState<Estado>(ESTADO_INICIAL);
 
-  async function executar(acao: () => Promise<string>) {
+  async function executar(
+    acao: () => Promise<string>,
+    aoTerminar?: () => void,
+  ) {
     setEstado({ ...ESTADO_INICIAL, enviando: true });
     try {
       const mensagem = await acao();
@@ -83,6 +93,8 @@ function useAcao() {
           sucesso: null,
         });
       }
+    } finally {
+      aoTerminar?.();
     }
   }
 
@@ -111,15 +123,21 @@ export function GestaoUsuario({
   ehVoce: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-6">
-      <h2 className="text-base font-semibold text-slate-900">
+    <section
+      aria-labelledby="acoes-da-supervisao"
+      className="flex flex-col gap-6"
+    >
+      <h2
+        id="acoes-da-supervisao"
+        className="text-base font-semibold text-slate-900"
+      >
         Ações da supervisão
       </h2>
       <BlocoDados usuario={usuario} />
       <BlocoPerfil usuario={usuario} ehVoce={ehVoce} />
       <BlocoSituacao usuario={usuario} ehVoce={ehVoce} />
       <BlocoSenha usuario={usuario} ehVoce={ehVoce} />
-    </div>
+    </section>
   );
 }
 
@@ -136,6 +154,7 @@ function BlocoDados({ usuario }: { usuario: UsuarioGerenciado }) {
   const [department, setDepartment] = useState(usuario.department ?? "");
   const [whatsappOptIn, setWhatsappOptIn] = useState(usuario.whatsappOptIn);
   const [camposLocais, setCamposLocais] = useState<Record<string, string[]>>({});
+  const [resumoLocal, setResumoLocal] = useState<string | null>(null);
 
   // Depois de salvar, o servidor devolve os valores já normalizados (nome com
   // espaços aparados, e-mail em minúsculas). Ressincronizar evita que a tela
@@ -177,9 +196,15 @@ function BlocoDados({ usuario }: { usuario: UsuarioGerenciado }) {
         (porCampo[chave] ??= []).push(problema.message);
       }
       setCamposLocais(porCampo);
+      // Erro só no campo passa despercebido: quem usa leitor de tela continua
+      // com o foco no botão e não recebe aviso nenhum de que nada foi salvo.
+      setResumoLocal(
+        "Nada foi salvo. Corrija os campos destacados abaixo e envie de novo.",
+      );
       return;
     }
 
+    setResumoLocal(null);
     void executar(async () => {
       await api.patch<RespostaUsuario>(
         `/api/admin/users/${usuario.id}`,
@@ -197,7 +222,13 @@ function BlocoDados({ usuario }: { usuario: UsuarioGerenciado }) {
       />
       <CardBody>
         <form onSubmit={salvar} noValidate className="flex flex-col gap-4">
-          <Feedback estado={estado} />
+          {resumoLocal ? (
+            <Alert tone="danger" title="Não foi possível salvar">
+              {resumoLocal}
+            </Alert>
+          ) : (
+            <Feedback estado={estado} />
+          )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TextField
@@ -274,15 +305,17 @@ function BlocoPerfil({
   const promovendo = role === "SUPERVISOR";
 
   function confirmar() {
-    void executar(async () => {
-      await api.patch<RespostaUsuario>(`/api/admin/users/${usuario.id}`, {
-        role,
-      });
-      setConfirmando(false);
-      return promovendo
-        ? `${usuario.fullName} agora tem perfil de supervisão.`
-        : `${usuario.fullName} agora tem perfil de professor(a).`;
-    });
+    void executar(
+      async () => {
+        await api.patch<RespostaUsuario>(`/api/admin/users/${usuario.id}`, {
+          role,
+        });
+        return promovendo
+          ? `${usuario.fullName} agora tem perfil de supervisão.`
+          : `${usuario.fullName} agora tem perfil de professor(a).`;
+      },
+      () => setConfirmando(false),
+    );
   }
 
   return (
@@ -360,15 +393,17 @@ function BlocoSituacao({
   const [confirmando, setConfirmando] = useState(false);
 
   function alterar(ativa: boolean) {
-    void executar(async () => {
-      await api.patch<RespostaUsuario>(`/api/admin/users/${usuario.id}`, {
-        active: ativa,
-      });
-      setConfirmando(false);
-      return ativa
-        ? `Conta de ${usuario.fullName} reativada. A pessoa já pode entrar de novo.`
-        : `Conta de ${usuario.fullName} desativada e sessões encerradas.`;
-    });
+    void executar(
+      async () => {
+        await api.patch<RespostaUsuario>(`/api/admin/users/${usuario.id}`, {
+          active: ativa,
+        });
+        return ativa
+          ? `Conta de ${usuario.fullName} reativada. A pessoa já pode entrar de novo.`
+          : `Conta de ${usuario.fullName} desativada e sessões encerradas. Para devolver o acesso, use “Reativar conta” nesta mesma ficha.`;
+      },
+      () => setConfirmando(false),
+    );
   }
 
   return (
@@ -473,18 +508,20 @@ function BlocoSenha({
   }
 
   function confirmar() {
-    void executar(async () => {
-      const resposta = await api.post<RespostaUsuario>(
-        `/api/admin/users/${usuario.id}/reset-password`,
-        { newPassword: senha, mustChangePassword: exigirTroca },
-      );
-      setConfirmando(false);
-      setSenha("");
-      return (
-        resposta.mensagem ??
-        "Senha redefinida e sessões encerradas. Entregue a senha provisória pessoalmente."
-      );
-    });
+    void executar(
+      async () => {
+        const resposta = await api.post<RespostaUsuario>(
+          `/api/admin/users/${usuario.id}/reset-password`,
+          { newPassword: senha, mustChangePassword: exigirTroca },
+        );
+        setSenha("");
+        return (
+          resposta.mensagem ??
+          "Senha redefinida e sessões encerradas. Entregue a senha provisória pessoalmente, sem escrever em bilhete."
+        );
+      },
+      () => setConfirmando(false),
+    );
   }
 
   if (ehVoce) {

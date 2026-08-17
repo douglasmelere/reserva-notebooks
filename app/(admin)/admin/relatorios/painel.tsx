@@ -248,7 +248,6 @@ export function Painel({
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
                       disabled={pendente}
                       onClick={() => atalho(addDays(hoje, -30))}
                     >
@@ -256,7 +255,6 @@ export function Painel({
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
                       disabled={pendente}
                       onClick={() => atalho(`${hoje.slice(0, 7)}-01`)}
                     >
@@ -264,7 +262,6 @@ export function Painel({
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
                       disabled={pendente}
                       onClick={() => atalho(`${hoje.slice(0, 4)}-01-01`)}
                     >
@@ -292,8 +289,14 @@ export function Painel({
               </a>
             </div>
 
+            {/* Anuncia também o desfecho: sem isso o leitor de tela ouvia
+                "gerando..." e nunca era avisado de que o relatório chegou. */}
             <p aria-live="polite" className="text-xs text-slate-500">
-              {pendente ? "Gerando o relatório..." : ""}
+              {pendente
+                ? "Gerando o relatório..."
+                : relatorio
+                  ? `${relatorio.titulo}: ${relatorio.principal.linhas.length} linha(s) no recorte atual.`
+                  : ""}
             </p>
           </form>
         </CardBody>

@@ -229,6 +229,16 @@ export function NovaOcorrenciaForm({
       setErroGeral("Verifique os campos destacados.");
       return;
     }
+    if (targetType === "RESERVATION" && !reservationId) {
+      // Sem esta conferência o Zod reprovava pela regra composta e devolvia
+      // "Selecione o item relacionado" no campo *O problema é com* — que estava
+      // preenchido. O erro tem de aparecer na reserva, que é o que falta.
+      setErrosCampo({
+        reservationId: ["Selecione a reserva a que o problema se refere."],
+      });
+      setErroGeral("Verifique os campos destacados.");
+      return;
+    }
     if (!isSupervisor && targetType !== "RESERVATION" && !reservationId) {
       setErrosCampo({
         reservationId: ["Selecione a reserva em que você usou o equipamento."],
@@ -334,9 +344,29 @@ export function NovaOcorrenciaForm({
                 hint="Deixe em branco para ver os primeiros 100 itens."
               />
 
-              {/* `Spinner` e `Alert` já trazem role="status"/"alert"; um
-                  aria-live aqui criaria região viva dentro de região viva. */}
-              {carregandoItens && <Spinner label="Carregando equipamentos..." />}
+              {/* A lista do `select` se refaz sozinha 300 ms depois de digitar.
+                  Esta região existe desde a primeira renderização — região viva
+                  criada junto com o texto costuma não ser anunciada — e é a
+                  única que narra o resultado: o `Spinner` fica só como sinal
+                  visual, senão o leitor de tela falaria a mesma coisa duas
+                  vezes. `Alert` já traz role="alert" e cuida do erro. */}
+              <p aria-live="polite" className="sr-only">
+                {carregandoItens || erroItens
+                  ? ""
+                  : opcoesItem.length === 0
+                    ? "Nenhum equipamento encontrado para esta busca."
+                    : `${opcoesItem.length} ${
+                        opcoesItem.length === 1
+                          ? "equipamento encontrado"
+                          : "equipamentos encontrados"
+                      }.`}
+              </p>
+
+              {carregandoItens && (
+                <div aria-hidden="true">
+                  <Spinner label="Carregando equipamentos..." />
+                </div>
+              )}
               {erroItens && <Alert tone="danger">{erroItens}</Alert>}
 
               <SelectField
@@ -367,24 +397,34 @@ export function NovaOcorrenciaForm({
             </div>
           )}
 
+          {/* Quando o alvo é a reserva inteira, ela deixa de ser um vínculo
+              opcional e passa a ser o próprio assunto da ocorrência — inclusive
+              para a supervisão. */}
           <SelectField
             label="Reserva relacionada"
-            required={!isSupervisor}
+            required={!isSupervisor || targetType === "RESERVATION"}
             value={reservationId}
             onChange={(e) => setReservationId(e.target.value)}
             options={reservas}
             placeholder={
+              // A supervisão enxerga as reservas de todo mundo: lista vazia ali
+              // significa que a instituição não tem reserva nenhuma, não que
+              // "você" não tem.
               reservas.length === 0
-                ? "Você ainda não tem reservas registradas"
-                : isSupervisor
+                ? isSupervisor
+                  ? "Nenhuma reserva cadastrada"
+                  : "Você ainda não tem reservas registradas"
+                : isSupervisor && targetType !== "RESERVATION"
                   ? "Sem reserva vinculada"
                   : "Selecione a reserva"
             }
             error={errosCampo.reservationId}
             hint={
-              isSupervisor
-                ? "Opcional para a supervisão. Vincular ajuda a reconstruir o histórico do equipamento."
-                : "É por ela que a supervisão sabe quem estava com o equipamento."
+              targetType === "RESERVATION"
+                ? "Obrigatória: é a reserva que a ocorrência descreve."
+                : isSupervisor
+                  ? "Opcional para a supervisão. Vincular ajuda a reconstruir o histórico do equipamento."
+                  : "É por ela que a supervisão sabe quem estava com o equipamento."
             }
           />
 
@@ -411,10 +451,14 @@ export function NovaOcorrenciaForm({
             />
           </div>
 
+          {/* O esquema corta em 2000 caracteres e, nesse limite, o Zod devolve
+              a mensagem padrão dele — em inglês. O `maxLength` impede que o
+              professor chegue lá. */}
           <TextAreaField
             label="Descrição detalhada"
             required
             rows={5}
+            maxLength={2000}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             error={errosCampo.description}
@@ -446,7 +490,7 @@ export function NovaOcorrenciaForm({
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" loading={enviando}>
-              Registrar ocorrência
+              Registrar problema
             </Button>
             <Link
               href="/ocorrencias"
@@ -538,10 +582,12 @@ function OcorrenciaRegistrada({
           </Alert>
         )}
 
+        {/* h3: o título do cartão ("Ocorrência X registrada") já é o h2 desta
+            região, e esta seção fica dentro dele. */}
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-slate-900">
+          <h3 className="text-base font-semibold text-slate-900">
             Anexar fotos (opcional)
-          </h2>
+          </h3>
           <p className="text-sm text-slate-600">
             Uma foto do dano resolve metade do diagnóstico. Aceitamos JPG, PNG ou
             WEBP de até {LIMITE_ANEXO_MB} MB, no máximo {MAX_ANEXOS} por

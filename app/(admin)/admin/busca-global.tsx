@@ -51,6 +51,7 @@ export function BuscaGlobal() {
   const router = useRouter();
   const listaId = useId();
   const opcaoId = (indice: number) => `${listaId}-opcao-${indice}`;
+  const grupoId = (tipo: GrupoBusca["tipo"]) => `${listaId}-grupo-${tipo}`;
 
   const [termo, setTermo] = useState("");
   const [grupos, setGrupos] = useState<GrupoBusca[]>([]);
@@ -163,6 +164,17 @@ export function BuscaGlobal() {
   const mostrarPainel = aberto && termo.trim().length >= MINIMO_CARACTERES;
   const semResultados = !carregando && buscou && !erro && opcoes.length === 0;
 
+  // O foco nunca sai do campo (é `aria-activedescendant` que move a seleção),
+  // então o navegador não rola o painel sozinho: sem isto, a opção "ativa" some
+  // da área visível assim que a lista passa da altura máxima.
+  useEffect(() => {
+    if (ativo < 0) return;
+    document
+      .getElementById(opcaoId(ativo))
+      ?.scrollIntoView({ block: "nearest" });
+    // `opcaoId` deriva só de `listaId`, que é estável durante a vida do componente.
+  }, [ativo, listaId]);
+
   return (
     <div
       className="relative"
@@ -188,27 +200,29 @@ export function BuscaGlobal() {
         onFocus={() => setAberto(true)}
         onKeyDown={aoTeclar}
         aria-expanded={mostrarPainel}
-        aria-controls={listaId}
+        aria-controls={mostrarPainel ? listaId : undefined}
         aria-autocomplete="list"
         aria-activedescendant={ativo >= 0 ? opcaoId(ativo) : undefined}
       />
 
-      {/* Contagem anunciada por leitor de tela sem depender de foco. */}
+      {/* Resultado e falha anunciados por leitor de tela sem depender de foco.
+          O "carregando" fica por conta do `Spinner`, que já é `role="status"` —
+          repeti-lo aqui faria a leitura dobrada a cada tecla. */}
       <p aria-live="polite" className="sr-only">
         {carregando
-          ? "Buscando resultados."
-          : buscou
-            ? `${opcoes.length} resultado(s) para ${termo.trim()}.`
-            : ""}
+          ? ""
+          : erro
+            ? `A busca falhou: ${erro}`
+            : buscou
+              ? `${opcoes.length} resultado(s) para ${termo.trim()}.`
+              : ""}
       </p>
 
       {mostrarPainel && (
-        <div
-          id={listaId}
-          role="listbox"
-          aria-label="Resultados da busca"
-          className="absolute z-20 mt-2 max-h-96 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-        >
+        <div className="absolute z-20 mt-2 max-h-96 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+          {/* Mensagens de estado ficam FORA da `listbox`: um `role="listbox"`
+              só pode conter opções e grupos, e um parágrafo solto ali faz o
+              leitor de tela perder a contagem de itens. */}
           {carregando && (
             <div className="px-3 py-2">
               <Spinner label="Buscando..." />
@@ -216,7 +230,10 @@ export function BuscaGlobal() {
           )}
 
           {!carregando && erro && (
-            <p className="px-3 py-2 text-sm font-medium text-red-700">{erro}</p>
+            <p className="flex gap-2 px-3 py-2 text-sm font-medium text-red-700">
+              <span aria-hidden="true">⚠</span>
+              <span>{erro}</span>
+            </p>
           )}
 
           {semResultados && (
@@ -232,51 +249,65 @@ export function BuscaGlobal() {
             </p>
           )}
 
-          {!carregando &&
-            grupos.map((grupo) => (
-              <div key={grupo.tipo} className="pb-1">
-                <p className="px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  <span aria-hidden="true">{ICONE_GRUPO[grupo.tipo]} </span>
-                  {grupo.rotulo}
-                </p>
-                <ul>
-                  {grupo.itens.map((item) => {
-                    const indice = opcoes.findIndex(
-                      (opcao) =>
-                        opcao.tipo === grupo.tipo && opcao.id === item.id,
-                    );
-                    const selecionado = indice === ativo;
-                    return (
-                      <li key={`${grupo.tipo}-${item.id}`}>
-                        <Link
-                          id={opcaoId(indice)}
-                          role="option"
-                          aria-selected={selecionado}
-                          href={item.href}
-                          onMouseEnter={() => setAtivo(indice)}
-                          onClick={() => setAberto(false)}
-                          className={cn(
-                            "flex min-h-11 flex-col justify-center rounded-lg px-3 py-2",
-                            selecionado
-                              ? "bg-sky-50 text-sky-900"
-                              : "text-slate-800 hover:bg-slate-100",
-                          )}
-                        >
-                          <span className="truncate text-sm font-medium">
-                            {item.titulo}
-                          </span>
-                          {item.subtitulo && (
-                            <span className="truncate text-xs text-slate-600">
-                              {item.subtitulo}
+          <ul
+            id={listaId}
+            role="listbox"
+            aria-label="Resultados da busca"
+            className="flex flex-col gap-1"
+          >
+            {!carregando &&
+              grupos.map((grupo) => (
+                // `role="presentation"` some da árvore de acessibilidade e
+                // "promove" o grupo a filho direto da listbox, como a ARIA exige.
+                <li key={grupo.tipo} role="presentation">
+                  <p
+                    id={grupoId(grupo.tipo)}
+                    className="px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase"
+                  >
+                    <span aria-hidden="true">{ICONE_GRUPO[grupo.tipo]} </span>
+                    {grupo.rotulo}
+                  </p>
+                  <ul role="group" aria-labelledby={grupoId(grupo.tipo)}>
+                    {grupo.itens.map((item) => {
+                      const indice = opcoes.findIndex(
+                        (opcao) =>
+                          opcao.tipo === grupo.tipo && opcao.id === item.id,
+                      );
+                      const selecionado = indice === ativo;
+                      return (
+                        <li key={`${grupo.tipo}-${item.id}`} role="presentation">
+                          <Link
+                            id={opcaoId(indice)}
+                            role="option"
+                            aria-selected={selecionado}
+                            href={item.href}
+                            onMouseEnter={() => setAtivo(indice)}
+                            onClick={() => setAberto(false)}
+                            className={cn(
+                              "flex min-h-11 flex-col justify-center rounded-lg px-3 py-2",
+                              // Sublinhado e fundo juntos: quem não distingue
+                              // cores continua vendo qual opção está ativa.
+                              selecionado
+                                ? "bg-sky-50 text-sky-900 underline underline-offset-2"
+                                : "text-slate-800 hover:bg-slate-100",
+                            )}
+                          >
+                            <span className="truncate text-sm font-medium">
+                              {item.titulo}
                             </span>
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+                            {item.subtitulo && (
+                              <span className="truncate text-xs text-slate-600">
+                                {item.subtitulo}
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
+          </ul>
         </div>
       )}
     </div>

@@ -100,8 +100,12 @@ export default async function PerfilPage() {
                   Perfil de acesso
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900">
-                  <Badge tone={perfil.role === "SUPERVISOR" ? "info" : "neutral"}>
-                    {perfil.role === "SUPERVISOR" ? "Supervisão" : "Professor(a)"}
+                  <Badge
+                    tone={perfil.role === "SUPERVISOR" ? "info" : "neutral"}
+                  >
+                    {perfil.role === "SUPERVISOR"
+                      ? "Supervisão"
+                      : "Professor(a)"}
                   </Badge>
                 </dd>
               </div>

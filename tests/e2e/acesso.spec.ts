@@ -19,19 +19,21 @@ test.describe("cadastro e entrada", () => {
 
     await page.goto("/cadastro");
     await expect(
-      page.getByRole("heading", { name: /criar cadastro/i }),
+      page.getByRole("heading", { name: /criar meu cadastro/i }),
     ).toBeVisible();
 
-    await page.getByLabel("Nome completo").fill("Professor de Teste");
-    await page.getByLabel("Usuário da intranet").fill(usuario);
-    await page.getByLabel("Senha", { exact: true }).fill(SENHA_DEMO);
-    await page.getByLabel("Confirme a senha").fill(SENHA_DEMO);
+    await page.getByLabel(/^Nome completo\b/).fill("Professor de Teste");
+    await page.getByLabel(/^Usuário da intranet\b/).fill(usuario);
+    await page.getByLabel(/^Senha\b/).fill(SENHA_DEMO);
+    await page.getByLabel(/^Confirme a senha\b/).fill(SENHA_DEMO);
 
     await page.getByRole("button", { name: /criar|cadastrar/i }).click();
 
     // O cadastro já leva o professor para dentro do sistema.
     await page.waitForURL(/\/inicio/, { timeout: 30_000 });
-    await expect(page.getByRole("navigation")).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Navegação principal" }),
+    ).toBeVisible();
   });
 
   test("entra e sai", async ({ page }) => {
@@ -43,8 +45,8 @@ test.describe("cadastro e entrada", () => {
 
   test("senha errada mostra mensagem genérica e não entra", async ({ page }) => {
     await page.goto("/entrar");
-    await page.getByLabel("Usuário da intranet").fill(CONTAS.silva.usuario);
-    await page.getByLabel("Senha", { exact: true }).fill("senha-errada");
+    await page.getByLabel(/^Usuário da intranet\b/).fill(CONTAS.silva.usuario);
+    await page.getByLabel(/^Senha\b/).fill("senha-errada");
     await page.getByRole("button", { name: /entrar/i }).click();
 
     await expect(page.getByRole("alert")).toContainText(/inválidos/i);
@@ -53,8 +55,8 @@ test.describe("cadastro e entrada", () => {
 
   test("usuário inexistente dá a mesma mensagem", async ({ page }) => {
     await page.goto("/entrar");
-    await page.getByLabel("Usuário da intranet").fill("nao.existe.mesmo");
-    await page.getByLabel("Senha", { exact: true }).fill("qualquer-coisa");
+    await page.getByLabel(/^Usuário da intranet\b/).fill("nao.existe.mesmo");
+    await page.getByLabel(/^Senha\b/).fill("qualquer-coisa");
     await page.getByRole("button", { name: /entrar/i }).click();
 
     await expect(page.getByRole("alert")).toContainText(/inválidos/i);
@@ -65,7 +67,7 @@ test.describe("separação entre professor e supervisão", () => {
   test("professor não vê o menu administrativo", async ({ page }) => {
     await entrar(page, CONTAS.silva);
 
-    const nav = page.getByRole("navigation");
+    const nav = page.getByRole("navigation", { name: "Navegação principal" });
     await expect(nav.getByRole("link", { name: /minhas reservas/i })).toBeVisible();
     await expect(nav.getByRole("link", { name: /^painel$/i })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: /usuários/i })).toHaveCount(0);
@@ -102,7 +104,13 @@ test.describe("separação entre professor e supervisão", () => {
   test("supervisor vê o menu completo e abre o painel", async ({ page }) => {
     await entrar(page, CONTAS.supervisor);
 
-    const nav = page.getByRole("navigation");
+    // No celular a navegação começa recolhida; no desktop ela é fixa.
+    const abrirMenu = page.getByRole("button", { name: /abrir menu/i });
+    if (await abrirMenu.isVisible().catch(() => false)) {
+      await abrirMenu.click();
+    }
+
+    const nav = page.getByRole("navigation", { name: "Navegação principal" });
     await expect(nav.getByRole("link", { name: /^painel$/i })).toBeVisible();
     await expect(nav.getByRole("link", { name: /usuários/i })).toBeVisible();
 
@@ -154,8 +162,12 @@ test.describe("responsividade", () => {
     await expect(abrir).toBeVisible();
     await abrir.click();
 
+    // Nome exato: a tela inicial também traz um atalho grande com o mesmo
+    // destino, e o seletor precisa apontar para o item do menu.
     await expect(
-      page.getByRole("navigation").getByRole("link", { name: /disponibilidade/i }),
+      page
+        .getByRole("navigation", { name: "Navegação principal" })
+        .getByRole("link", { name: "Disponibilidade", exact: true }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: /fechar menu/i }).click();

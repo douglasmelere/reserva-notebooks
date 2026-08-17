@@ -35,6 +35,12 @@ type ConfigAcao = {
   campoTexto: { rotulo: string; hint: string; obrigatorio: boolean } | null;
   /** Devolução e encerramento perguntam se ocorreu tudo bem. */
   perguntaSemProblemas: boolean;
+  /**
+   * O que dizer depois de concluir. Cada ação tem uma consequência prática
+   * diferente (o equipamento liberou? dá para retirar agora?), e é isso que a
+   * supervisão precisa saber para o próximo passo no balcão.
+   */
+  sucesso: string;
 };
 
 const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
@@ -51,6 +57,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: false,
     },
     perguntaSemProblemas: false,
+    sucesso:
+      "Reserva confirmada. O professor já pode retirar o equipamento no período combinado.",
   },
   RETIRADA: {
     rotulo: "Marcar retirada",
@@ -65,6 +73,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: false,
     },
     perguntaSemProblemas: false,
+    sucesso:
+      "Retirada registrada com a data e a hora de agora. Ao receber o equipamento de volta, use “Registrar devolução”.",
   },
   EM_USO: {
     rotulo: "Marcar em uso",
@@ -74,6 +84,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
     confirmar: "Marcar em uso",
     campoTexto: null,
     perguntaSemProblemas: false,
+    sucesso:
+      "Reserva marcada como em uso. O equipamento segue reservado até a devolução ser registrada.",
   },
   DEVOLVIDA: {
     rotulo: "Registrar devolução",
@@ -88,6 +100,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: false,
     },
     perguntaSemProblemas: true,
+    sucesso:
+      "Devolução registrada. O equipamento voltou a ficar disponível para outras reservas. Se houve problema, registre uma ocorrência em Ocorrências.",
   },
   ENCERRADA: {
     rotulo: "Encerrar reserva",
@@ -102,6 +116,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: false,
     },
     perguntaSemProblemas: true,
+    sucesso:
+      "Reserva encerrada. Ela não muda mais de situação; a partir daqui só é possível corrigir os dados do registro.",
   },
   NAO_COMPARECEU: {
     rotulo: "Marcar não comparecimento",
@@ -116,6 +132,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: true,
     },
     perguntaSemProblemas: false,
+    sucesso:
+      "Não comparecimento registrado. O equipamento já está livre e pode ser reservado por outro professor.",
   },
   CANCELADA: {
     rotulo: "Cancelar reserva",
@@ -130,6 +148,8 @@ const ACOES: Partial<Record<ReservationStatus, ConfigAcao>> = {
       obrigatorio: true,
     },
     perguntaSemProblemas: false,
+    sucesso:
+      "Reserva cancelada e equipamento liberado. O professor vê o motivo no detalhe da reserva dele.",
   },
 };
 
@@ -179,17 +199,23 @@ export function Gestao({
   const router = useRouter();
 
   // --- Ações de situação ---------------------------------------------------
-  const [acaoAberta, setAcaoAberta] = useState<ReservationStatus | null>(null);
+  // `acaoDoDialogo` guarda o conteúdo e `dialogoAberto` guarda a visibilidade.
+  // São dois estados porque o `<dialog>` nativo só devolve o foco ao botão que
+  // o abriu quando recebe `close()`: se desmontássemos o diálogo ao fechar, o
+  // elemento sairia do DOM ainda aberto e o foco cairia no início da página.
+  const [acaoDoDialogo, setAcaoDoDialogo] = useState<ReservationStatus | null>(null);
+  const [dialogoAberto, setDialogoAberto] = useState(false);
   const [textoDaAcao, setTextoDaAcao] = useState("");
   const [semProblemas, setSemProblemas] = useState(true);
   const [executando, setExecutando] = useState(false);
   const [erroDaAcao, setErroDaAcao] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
-  const configAberta = acaoAberta ? ACOES[acaoAberta] : undefined;
+  const configAberta = acaoDoDialogo ? ACOES[acaoDoDialogo] : undefined;
 
   function abrirAcao(status: ReservationStatus): void {
-    setAcaoAberta(status);
+    setAcaoDoDialogo(status);
+    setDialogoAberto(true);
     setTextoDaAcao("");
     setSemProblemas(true);
     setErroDaAcao(null);
@@ -197,11 +223,12 @@ export function Gestao({
   }
 
   function fecharAcao(): void {
-    setAcaoAberta(null);
+    setDialogoAberto(false);
     setErroDaAcao(null);
   }
 
   async function executarAcao(): Promise<void> {
+    const acaoAberta = acaoDoDialogo;
     if (!acaoAberta || !configAberta) return;
 
     const texto = textoDaAcao.trim();
@@ -230,8 +257,8 @@ export function Gestao({
         });
       }
 
-      setAcaoAberta(null);
-      setMensagem(`Reserva ${codigo}: ${configAberta.rotulo.toLowerCase()} concluído.`);
+      setDialogoAberto(false);
+      setMensagem(`Reserva ${codigo}: ${configAberta.sucesso}`);
       // Recarrega os componentes de servidor: situação, linha do tempo e
       // histórico passam a refletir a mudança sem recarregar a página inteira.
       router.refresh();
@@ -420,9 +447,9 @@ export function Gestao({
         </CardBody>
       </Card>
 
-      {configAberta && acaoAberta && (
+      {configAberta && (
         <ConfirmDialog
-          open
+          open={dialogoAberto}
           title={configAberta.rotulo}
           description={configAberta.descricao}
           confirmLabel={configAberta.confirmar}
@@ -517,6 +544,7 @@ export function Gestao({
               selecionados={form.kitIds}
               aoAlternar={(id, marcado) => alternaRecurso("kitIds", id, marcado)}
               avisoCarregadores={false}
+              erro={errosCampos.kitIds}
             />
 
             <ListaDeRecursos
@@ -526,6 +554,7 @@ export function Gestao({
               selecionados={form.notebookIds}
               aoAlternar={(id, marcado) => alternaRecurso("notebookIds", id, marcado)}
               avisoCarregadores={false}
+              erro={errosCampos.notebookIds}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

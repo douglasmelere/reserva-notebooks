@@ -24,8 +24,8 @@ export async function entrar(
   conta: { usuario: string; senha: string },
 ): Promise<void> {
   await page.goto("/entrar");
-  await page.getByLabel("Usuário da intranet").fill(conta.usuario);
-  await page.getByLabel("Senha", { exact: true }).fill(conta.senha);
+  await page.getByLabel(/^Usuário da intranet\b/).fill(conta.usuario);
+  await page.getByLabel(/^Senha\b/).fill(conta.senha);
   await page.getByRole("button", { name: /entrar/i }).click();
   await page.waitForURL(/\/(inicio|perfil)/, { timeout: 20_000 });
 }

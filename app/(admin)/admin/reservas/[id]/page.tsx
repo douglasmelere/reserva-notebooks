@@ -31,7 +31,12 @@ import {
   canTransition,
 } from "@/server/reservation-policy";
 import { getReservation } from "@/server/reservations";
-import { KIT_STATUS_LABEL, notebookIsReservable } from "@/server/resources";
+import {
+  KIT_STATUS_LABEL,
+  kitKey,
+  notebookIsReservable,
+  notebookKey,
+} from "@/server/resources";
 import { Gestao } from "./gestao";
 
 export const dynamic = "force-dynamic";
@@ -109,20 +114,62 @@ const ROTULO_AUDITORIA: Record<string, string> = {
   code: "Código",
   motivo: "Motivo",
   semProblemas: "Sem problemas",
+  requestedNotebooks: "Notebooks solicitados",
+  teacherNotes: "Observações do professor",
+  supervisorNotes: "Observações da supervisão",
+  cancelReason: "Motivo do cancelamento",
+  changeReason: "Motivo da alteração",
+  pickedUpAt: "Retirada em",
+  returnedAt: "Devolvida em",
+  closedAt: "Encerrada em",
+  cancelledAt: "Cancelada em",
 };
+
+/**
+ * Último recurso para uma chave sem rótulo próprio.
+ *
+ * A auditoria é gravada com os nomes técnicos dos campos; se um campo novo
+ * aparecer no histórico antes de entrar no mapa acima, "requestedNotebooks" é
+ * pior do que "Requested notebooks", mas ambos são ruins — por isso a
+ * humanização é a rede de segurança, e não o caminho normal.
+ */
+function humanizaChave(chave: string): string {
+  const texto = chave.replace(/([A-Z])/g, " $1").toLowerCase().trim();
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
 function ehStatus(valor: string): valor is ReservationStatus {
   return valor in RESERVATION_STATUS_LABEL;
 }
 
-function formataValorDeAuditoria(valor: unknown): string {
+/**
+ * Formata um valor da auditoria para leitura humana.
+ *
+ * `rotulosDeRecurso` traduz as `resourceKey` gravadas no histórico
+ * ("kit:ckv1...") para o nome que a supervisão vê na prateleira. Sem isso, a
+ * linha "Equipamentos" do histórico mostraria identificadores do banco.
+ */
+function formataValorDeAuditoria(
+  valor: unknown,
+  rotulosDeRecurso: Map<string, string>,
+): string {
   if (valor === null || valor === undefined || valor === "") return "—";
   if (typeof valor === "boolean") return valor ? "Sim" : "Não";
   if (typeof valor === "number") return String(valor);
   if (Array.isArray(valor)) {
-    return valor.map((item) => formataValorDeAuditoria(item)).join(", ") || "—";
+    return (
+      valor
+        .map((item) => formataValorDeAuditoria(item, rotulosDeRecurso))
+        .join(", ") || "—"
+    );
   }
   if (typeof valor === "string") {
+    const recurso = rotulosDeRecurso.get(valor);
+    if (recurso) return recurso;
+    // Equipamento que saiu do inventário depois da reserva: o histórico
+    // preserva a chave, mas o nome já não existe em lugar nenhum.
+    if (valor.startsWith("kit:")) return "Kit removido do inventário";
+    if (valor.startsWith("notebook:")) return "Notebook removido do inventário";
     if (ehStatus(valor)) return RESERVATION_STATUS_LABEL[valor];
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(valor)) {
       return formatDateTimeBR(new Date(valor));
@@ -132,11 +179,14 @@ function formataValorDeAuditoria(valor: unknown): string {
   return JSON.stringify(valor);
 }
 
-function paresDoJson(valor: unknown): [string, string][] {
+function paresDoJson(
+  valor: unknown,
+  rotulosDeRecurso: Map<string, string>,
+): [string, string][] {
   if (typeof valor !== "object" || valor === null || Array.isArray(valor)) return [];
   return Object.entries(valor as Record<string, unknown>).map(([chave, item]) => [
-    ROTULO_AUDITORIA[chave] ?? chave,
-    formataValorDeAuditoria(item),
+    ROTULO_AUDITORIA[chave] ?? humanizaChave(chave),
+    formataValorDeAuditoria(item, rotulosDeRecurso),
   ]);
 }
 
@@ -171,6 +221,31 @@ export default async function DetalheDaReservaPage({
   const notebookIds = reserva.items
     .map((item) => item.notebookId)
     .filter((valor): valor is string => valor !== null);
+
+  // Dicionário de `resourceKey` -> nome legível, usado para traduzir o campo
+  // "Equipamentos" do histórico. Os itens da própria reserva entram por último
+  // porque cobrem equipamentos que já saíram das listas do inventário.
+  const rotulosDeRecurso = new Map<string, string>();
+  for (const kit of kits.items) {
+    rotulosDeRecurso.set(kitKey(kit.id), `${kit.name} (${kit.code})`);
+  }
+  for (const notebook of notebooks.items) {
+    rotulosDeRecurso.set(
+      notebookKey(notebook.id),
+      `Notebook ${notebook.assetTag}${notebook.nickname ? ` — ${notebook.nickname}` : ""}`,
+    );
+  }
+  for (const item of reserva.items) {
+    if (item.kitId && item.kit) {
+      rotulosDeRecurso.set(kitKey(item.kitId), `${item.kit.name} (${item.kit.code})`);
+    }
+    if (item.notebookId && item.notebook) {
+      rotulosDeRecurso.set(
+        notebookKey(item.notebookId),
+        `Notebook ${item.notebook.assetTag}${item.notebook.nickname ? ` — ${item.notebook.nickname}` : ""}`,
+      );
+    }
+  }
 
   const marcos: { rotulo: string; valor: string }[] = [
     { rotulo: "Criada em", valor: formatDateTimeBR(reserva.createdAt) },
@@ -380,8 +455,8 @@ export default async function DetalheDaReservaPage({
           ) : (
             <ol className="flex flex-col gap-3">
               {historico.map((registro) => {
-                const antes = paresDoJson(registro.before);
-                const depois = paresDoJson(registro.after);
+                const antes = paresDoJson(registro.before, rotulosDeRecurso);
+                const depois = paresDoJson(registro.after, rotulosDeRecurso);
 
                 return (
                   <li

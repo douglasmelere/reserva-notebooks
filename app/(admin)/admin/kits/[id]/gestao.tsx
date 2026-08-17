@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SelectField, TextAreaField } from "@/components/ui/field";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Alert, Card, CardBody, CardHeader } from "@/components/ui/primitives";
+import { useDisclosureFocus } from "@/components/ui/use-disclosure-focus";
 import { KitForm, type KitParaEdicao } from "../kit-form";
 
 /**
@@ -33,7 +34,16 @@ const OPCOES_DE_STATUS = [
 export function GestaoDoKit({ kit }: { kit: KitGerenciavel }) {
   const router = useRouter();
 
-  const [editando, setEditando] = useState(false);
+  // O botão "Editar cadastro" dá lugar ao formulário; o hook garante que o
+  // foco do teclado acompanhe essa troca nos dois sentidos.
+  const {
+    aberto: editando,
+    abrir: abrirEdicao,
+    fechar: fecharEdicao,
+    painelRef: formularioRef,
+    gatilhoRef: botaoEditarRef,
+  } = useDisclosureFocus();
+
   const [status, setStatus] = useState<string>(kit.status);
   const [motivo, setMotivo] = useState("");
 
@@ -50,7 +60,15 @@ export function GestaoDoKit({ kit }: { kit: KitGerenciavel }) {
     setAviso(null);
     try {
       await api.patch(`/api/kits/${kit.id}`, { status });
-      setAviso("Status atualizado.");
+      const rotulo =
+        OPCOES_DE_STATUS.find((opcao) => opcao.value === status)?.label ??
+        status;
+      // Dizer só "Status atualizado" deixaria no ar a dúvida que mais aparece:
+      // se mudar para manutenção derrubou as reservas já marcadas. Não derruba.
+      setAviso(
+        `Kit agora está como “${rotulo}”. As reservas já marcadas continuam de pé — ` +
+          "avise os professores se este kit não puder sair.",
+      );
       router.refresh();
     } catch (falha) {
       setErro(
@@ -119,7 +137,12 @@ export function GestaoDoKit({ kit }: { kit: KitGerenciavel }) {
         description="Editar cadastro, mudar o status operacional e desativar."
         action={
           !editando && (
-            <Button variant="outline" onClick={() => setEditando(true)}>
+            <Button
+              ref={botaoEditarRef}
+              variant="outline"
+              aria-expanded={false}
+              onClick={abrirEdicao}
+            >
               Editar cadastro
             </Button>
           )
@@ -134,11 +157,18 @@ export function GestaoDoKit({ kit }: { kit: KitGerenciavel }) {
         {aviso && <Alert tone="success">{aviso}</Alert>}
 
         {editando ? (
-          <KitForm
-            kit={kit}
-            onSaved={() => setEditando(false)}
-            onCancel={() => setEditando(false)}
-          />
+          <div
+            ref={formularioRef}
+            tabIndex={-1}
+            aria-label={`Editar cadastro do kit ${kit.name}`}
+            className="focus:outline-none"
+          >
+            <KitForm
+              kit={kit}
+              onSaved={fecharEdicao}
+              onCancel={fecharEdicao}
+            />
+          </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SelectField, TextField } from "@/components/ui/field";
@@ -26,19 +26,28 @@ export function FiltrosUsuarios({
   const [valorBusca, setValorBusca] = useState(busca);
   const [valorPerfil, setValorPerfil] = useState(perfil);
   const [valorSituacao, setValorSituacao] = useState(situacao);
-  const [aplicando, setAplicando] = useState(false);
+
+  // `useTransition` amarra o estado de carregamento à navegação em si. Um
+  // booleano nosso ficaria preso em "aplicando" quando a pessoa reenviasse os
+  // mesmos filtros: a URL não mudaria, as props não mudariam, e o botão
+  // continuaria girando para sempre.
+  const [navegando, iniciarNavegacao] = useTransition();
+  const [acao, setAcao] = useState<"aplicar" | "limpar" | null>(null);
 
   // Ressincroniza quando a URL muda por fora (voltar, link de paginação).
   useEffect(() => {
     setValorBusca(busca);
     setValorPerfil(perfil);
     setValorSituacao(situacao);
-    setAplicando(false);
   }, [busca, perfil, situacao]);
+
+  useEffect(() => {
+    if (!navegando) setAcao(null);
+  }, [navegando]);
 
   function aplicar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setAplicando(true);
+    setAcao("aplicar");
 
     const search = new URLSearchParams();
     if (valorBusca.trim()) search.set("busca", valorBusca.trim());
@@ -47,15 +56,19 @@ export function FiltrosUsuarios({
     // Trocar de filtro sempre volta para a primeira página: manter "página 4"
     // com um resultado novo costuma levar a uma lista vazia sem explicação.
     const qs = search.toString();
-    router.push(`/admin/usuarios${qs ? `?${qs}` : ""}`);
+    iniciarNavegacao(() => {
+      router.push(`/admin/usuarios${qs ? `?${qs}` : ""}`);
+    });
   }
 
   function limpar() {
-    setAplicando(true);
+    setAcao("limpar");
     setValorBusca("");
     setValorPerfil("");
     setValorSituacao("");
-    router.push("/admin/usuarios");
+    iniciarNavegacao(() => {
+      router.push("/admin/usuarios");
+    });
   }
 
   const temFiltro = Boolean(busca || perfil || situacao);
@@ -98,11 +111,21 @@ export function FiltrosUsuarios({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" loading={aplicando}>
+        <Button
+          type="submit"
+          loading={navegando && acao === "aplicar"}
+          disabled={navegando && acao === "limpar"}
+        >
           Aplicar filtros
         </Button>
         {temFiltro && (
-          <Button type="button" variant="secondary" onClick={limpar}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={limpar}
+            loading={navegando && acao === "limpar"}
+            disabled={navegando && acao === "aplicar"}
+          >
             Limpar
           </Button>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -212,11 +212,16 @@ export function FormularioDeReserva({
     }
 
     setEnviando(true);
+    // A navegação para o detalhe é assíncrona: se o botão voltasse a ficar
+    // ativo aqui, um segundo clique durante a troca de página criaria uma
+    // reserva duplicada. Só reabilitamos quando a criação falha.
+    let criou = false;
     try {
       const criada = await api.post<{ id: string; code: string }>(
         "/api/reservations",
         validado.data,
       );
+      criou = true;
       setSucesso(
         `Reserva ${criada.code} criada para ${professorEscolhido?.nome ?? "o professor"}. Abrindo os detalhes...`,
       );
@@ -233,7 +238,7 @@ export function FormularioDeReserva({
         setErroGeral("Não foi possível criar a reserva. Tente novamente.");
       }
     } finally {
-      setEnviando(false);
+      if (!criou) setEnviando(false);
     }
   }
 
@@ -257,9 +262,12 @@ export function FormularioDeReserva({
             ultrapassados.
           </li>
           <li>
-            Os limites de {politicas.maxActiveReservationsPerUser || "—"} reserva(s)
-            ativa(s) por professor e de {politicas.maxResourcesPerReservation}{" "}
-            recurso(s) por reserva não bloqueiam a supervisão.
+            O limite de reservas ativas por professor (
+            {politicas.maxActiveReservationsPerUser === 0
+              ? "sem limite configurado"
+              : `${politicas.maxActiveReservationsPerUser} em aberto`}
+            ) e o de {politicas.maxResourcesPerReservation} recurso(s) por reserva
+            não bloqueiam a supervisão.
           </li>
         </ul>
         <p className="mt-2">
@@ -393,10 +401,6 @@ export function FormularioDeReserva({
           description={`Selecionados: ${totalSelecionado}. Itens em manutenção ou indisponíveis não podem ser reservados nem pela supervisão.`}
         />
         <CardBody className="flex flex-col gap-5">
-          {erros.kitIds && (
-            <p className="text-sm font-medium text-red-700">{erros.kitIds.join(" ")}</p>
-          )}
-
           <ListaDeRecursos
             titulo="Maletas e carrinhos"
             vazio="Nenhum kit cadastrado. Cadastre em Kits e carrinhos antes de reservar."
@@ -404,6 +408,7 @@ export function FormularioDeReserva({
             selecionados={form.kitIds}
             aoAlternar={(id, marcado) => alternaRecurso("kitIds", id, marcado)}
             avisoCarregadores={politicas.requireCompleteChargerKit}
+            erro={erros.kitIds}
           />
 
           <ListaDeRecursos
@@ -413,6 +418,7 @@ export function FormularioDeReserva({
             selecionados={form.notebookIds}
             aoAlternar={(id, marcado) => alternaRecurso("notebookIds", id, marcado)}
             avisoCarregadores={false}
+            erro={erros.notebookIds}
           />
 
           <TextField
@@ -514,6 +520,7 @@ export function ListaDeRecursos({
   selecionados,
   aoAlternar,
   avisoCarregadores,
+  erro,
 }: {
   titulo: string;
   vazio: string;
@@ -521,7 +528,16 @@ export function ListaDeRecursos({
   selecionados: string[];
   aoAlternar: (id: string, marcado: boolean) => void;
   avisoCarregadores: boolean;
+  /**
+   * Erro que a API (ou a validação) devolveu para esta lista. Sem isto, uma
+   * recusa em `kitIds`/`notebookIds` ficaria só no `fieldErrors` e a tela
+   * mostraria "verifique os dados" sem destacar nada.
+   */
+  erro?: string | string[] | null;
 }) {
+  const erroId = useId();
+  const textoDoErro = Array.isArray(erro) ? erro.join(" ") : erro;
+
   if (opcoes.length === 0) {
     return (
       <fieldset>
@@ -532,9 +548,20 @@ export function ListaDeRecursos({
   }
 
   return (
-    <fieldset>
+    <fieldset aria-describedby={textoDoErro ? erroId : undefined}>
       <legend className="pb-2 text-sm font-medium text-slate-700">{titulo}</legend>
-      <ul className="max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
+      {textoDoErro && (
+        <p id={erroId} className="pb-2 text-sm font-medium text-red-700">
+          {textoDoErro}
+        </p>
+      )}
+      <ul
+        className={
+          textoDoErro
+            ? "max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-red-500"
+            : "max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200"
+        }
+      >
         {opcoes.map((opcao) => {
           const bloqueadoPorCarregador =
             avisoCarregadores && opcao.carregadoresCompletos === false;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   CheckboxField,
@@ -53,6 +53,15 @@ export function FormNovoUsuario() {
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState<Sucesso | null>(null);
 
+  // O formulário inteiro é substituído pelo aviso de sucesso. Sem mover o foco,
+  // ele cai no `body`: quem navega por teclado voltaria ao topo do documento e
+  // quem usa leitor de tela perderia a instrução sobre a senha provisória.
+  const painelSucesso = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (sucesso) painelSucesso.current?.focus();
+  }, [sucesso]);
+
   function alterar<C extends keyof typeof VALORES_INICIAIS>(
     campo: C,
     valor: (typeof VALORES_INICIAIS)[C],
@@ -80,7 +89,9 @@ export function FormNovoUsuario() {
         (porCampo[chave] ??= []).push(problema.message);
       }
       setCampos(porCampo);
-      setErro("Verifique os campos destacados.");
+      setErro(
+        "A conta não foi criada. Corrija os campos destacados abaixo e envie de novo.",
+      );
       return;
     }
 
@@ -114,7 +125,11 @@ export function FormNovoUsuario() {
 
   if (sucesso) {
     return (
-      <div className="flex flex-col gap-4">
+      <div
+        ref={painelSucesso}
+        tabIndex={-1}
+        className="flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700"
+      >
         <Alert tone="success" title={`Conta criada para ${sucesso.fullName}`}>
           <p>{sucesso.mensagem}</p>
           <p className="mt-1">

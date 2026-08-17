@@ -66,7 +66,6 @@ export function IndicadorDeEtapas({
       >
         Etapa {atual} de {TOTAL_ETAPAS} — {etapa.titulo}
       </p>
-      <p className="mt-0.5 text-sm text-slate-600">{etapa.resumo}</p>
 
       <div
         role="progressbar"
@@ -98,7 +97,7 @@ export function IndicadorDeEtapas({
                 disabled={!acessivel}
                 aria-current={ativa ? "step" : undefined}
                 className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700",
                   ativa && "bg-sky-700 text-white",
                   !ativa && concluida && "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200",

@@ -58,6 +58,19 @@ const BOTAO_SECUNDARIO =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
 
 /**
+ * A trilha de auditoria guarda a ação como chave técnica ("kit.desativar").
+ * Quem lê a tela é a supervisão, então a chave nunca aparece crua.
+ */
+const ACAO_LABEL: Record<string, string> = {
+  "kit.criar": "Kit cadastrado",
+  "kit.atualizar": "Cadastro editado",
+  "kit.status": "Status alterado",
+  "kit.desativar": "Kit desativado",
+  "kit.bloquear": "Enviado para manutenção por ocorrência",
+  "kit.liberar": "Liberado após ocorrência",
+};
+
+/**
  * Kit inexistente vira 404 da própria aplicação. Qualquer outro erro continua
  * subindo: engolir uma falha de banco aqui esconderia o problema real.
  */
@@ -269,7 +282,23 @@ export default async function KitDetalhePage({
           </Card>
         </div>
 
-        <GestaoDoKit kit={kit} />
+        {/* Só os campos que o painel usa: o detalhe inteiro (notebooks e
+            reservas) seria serializado para o navegador à toa. */}
+        <GestaoDoKit
+          kit={{
+            id: kit.id,
+            code: kit.code,
+            name: kit.name,
+            type: kit.type,
+            capacity: kit.capacity,
+            location: kit.location,
+            description: kit.description,
+            notes: kit.notes,
+            status: kit.status,
+            statusLabel: kit.statusLabel,
+            notebookCount: kit.notebookCount,
+          }}
+        />
 
         <Card>
           <CardHeader
@@ -446,14 +475,16 @@ export default async function KitDetalhePage({
                     className="border-l-2 border-slate-200 pl-3"
                   >
                     <p className="text-sm text-slate-900">
-                      {registro.summary ?? registro.action}
+                      {registro.summary ??
+                        ACAO_LABEL[registro.action] ??
+                        registro.action}
                     </p>
                     <p className="text-xs text-slate-500">
                       {formatDateTimeBR(registro.createdAt)} ·{" "}
                       {registro.actor
                         ? registro.actor.fullName
                         : "usuário removido"}{" "}
-                      · {registro.action}
+                      · {ACAO_LABEL[registro.action] ?? registro.action}
                     </p>
                   </li>
                 ))}

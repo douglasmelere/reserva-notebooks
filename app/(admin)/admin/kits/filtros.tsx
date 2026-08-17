@@ -58,7 +58,12 @@ export function FiltrosDeKits({
     if (valores.status) params.set("status", valores.status);
     if (valores.local.trim()) params.set("local", valores.local.trim());
     if (valores.busca.trim()) params.set("busca", valores.busca.trim());
-    if (valores.desativados) params.set("desativados", "1");
+    // Pedir o status "Desativado" sem incluir os desativados devolveria lista
+    // vazia — o servidor filtra esse status para quem não pediu. Ligamos a
+    // inclusão junto para que o filtro faça o que a pessoa quis dizer.
+    if (valores.desativados || valores.status === "DESATIVADO") {
+      params.set("desativados", "1");
+    }
     // Sem "pagina": trocar de filtro sempre recomeça na primeira página.
     const query = params.toString();
     router.push(query ? `/admin/kits?${query}` : "/admin/kits");

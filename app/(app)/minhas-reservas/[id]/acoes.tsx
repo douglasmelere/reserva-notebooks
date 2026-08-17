@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import type { z } from "zod";
 import { ApiError, api } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
@@ -78,8 +78,44 @@ const OPCOES_SEVERIDADE = Object.entries(SEVERIDADE_LABEL).map(
   ([value, label]) => ({ value, label }),
 );
 
+/** Campo devolvido pela API → nome que o professor vê na tela. */
+const ROTULO_DO_CAMPO: Record<string, string> = {
+  notes: "Observações da devolução",
+  reason: "Motivo do cancelamento",
+  allGood: "Como foi a devolução",
+  incident: "Dados do problema",
+  "incident.targetType": "O que teve problema",
+  "incident.category": "Tipo de problema",
+  "incident.severity": "Gravidade",
+  "incident.description": "O que aconteceu",
+};
+
+/**
+ * Nome amigável do campo no resumo de erros. Sem isso, o professor lia só a
+ * mensagem solta, sem saber a qual campo ela pertence — e um caminho novo da
+ * API apareceria cru, como "incident.targetType".
+ */
+function rotuloDoCampo(caminho: string): string {
+  const direto = ROTULO_DO_CAMPO[caminho];
+  if (direto) return direto;
+  const base = caminho.split(".")[0] ?? caminho;
+  return ROTULO_DO_CAMPO[base] ?? "Dados enviados";
+}
+
 /** Item da reserva que pode receber a ocorrência (formato "TIPO" ou "TIPO:id"). */
 export type AlvoDeOcorrencia = { valor: string; rotulo: string };
+
+const TIPOS_DE_ALVO = [
+  "RESERVATION",
+  "KIT",
+  "NOTEBOOK",
+  "CHARGER_KIT",
+] as const;
+type TipoDeAlvo = (typeof TIPOS_DE_ALVO)[number];
+
+function ehTipoDeAlvo(valor: string | undefined): valor is TipoDeAlvo {
+  return TIPOS_DE_ALVO.some((tipo) => tipo === valor);
+}
 
 type RespostaFechamento = {
   incident: { code: string } | null;
@@ -130,6 +166,25 @@ export function AcoesDaReserva({
   const [errosCampo, setErrosCampo] = useState<Record<string, string[]>>({});
   const [sucesso, setSucesso] = useState<string | null>(null);
 
+  const acoesRef = useRef<HTMLDivElement>(null);
+  const formularioRef = useRef<HTMLDivElement>(null);
+  const formularioJaAberto = useRef(false);
+
+  // Abrir o formulário tira da tela o próprio botão que estava com o foco, e
+  // fechá-lo tira o botão "Voltar": nos dois casos o foco cairia no início da
+  // página. Reposicionar mantém quem navega por teclado onde a ação continua.
+  useEffect(() => {
+    if (formularioAberto) {
+      formularioJaAberto.current = true;
+      formularioRef.current?.focus();
+      return;
+    }
+    if (formularioJaAberto.current) {
+      formularioJaAberto.current = false;
+      acoesRef.current?.querySelector("button")?.focus();
+    }
+  }, [formularioAberto]);
+
   function tratarErro(falha: unknown, padrao: string) {
     if (falha instanceof ApiError) {
       setErro(falha.message);
@@ -148,8 +203,9 @@ export function AcoesDaReserva({
         reason: motivo.trim() || null,
       });
       setDialogoAberto(false);
+      setMotivo("");
       setSucesso(
-        `Reserva ${codigo} cancelada. Os equipamentos já voltaram a aparecer como disponíveis.`,
+        `Reserva ${codigo} cancelada. Os equipamentos já voltaram a aparecer como disponíveis para os outros professores. Se precisar deles de novo, faça uma nova reserva.`,
       );
       router.refresh();
     } catch (falha) {
@@ -167,15 +223,16 @@ export function AcoesDaReserva({
 
     // O alvo chega como "TIPO" ou "TIPO:id" para caber num único select; a API
     // espera o tipo e o identificador em campos separados.
-    const [tipoAlvo, idAlvo] = alvo.split(":");
+    const partes = alvo.split(":");
+    const tipoAlvo: TipoDeAlvo = ehTipoDeAlvo(partes[0])
+      ? partes[0]
+      : "RESERVATION";
+    const idAlvo = partes[1];
+
     const incidente =
       tudoBem === false
         ? {
-            targetType: tipoAlvo as
-              | "NOTEBOOK"
-              | "KIT"
-              | "CHARGER_KIT"
-              | "RESERVATION",
+            targetType: tipoAlvo,
             notebookId: tipoAlvo === "NOTEBOOK" ? (idAlvo ?? null) : null,
             kitId: tipoAlvo === "KIT" ? (idAlvo ?? null) : null,
             chargerKitId: tipoAlvo === "CHARGER_KIT" ? (idAlvo ?? null) : null,
@@ -216,9 +273,10 @@ export function AcoesDaReserva({
         [
           `Devolução da reserva ${codigo} registrada.`,
           resposta.incident
-            ? `Ocorrência ${resposta.incident.code} aberta para a supervisão.`
+            ? `Ocorrência ${resposta.incident.code} aberta para a supervisão — guarde este número para acompanhar o conserto.`
             : null,
           resposta.aviso,
+          "Entregue os equipamentos no local combinado; nada mais é necessário aqui no sistema.",
         ]
           .filter(Boolean)
           .join(" "),
@@ -252,7 +310,12 @@ export function AcoesDaReserva({
             {Object.keys(errosCampo).length > 0 && (
               <ul className="mt-1 list-inside list-disc">
                 {Object.entries(errosCampo).map(([campo, mensagens]) => (
-                  <li key={campo}>{mensagens.join(" ")}</li>
+                  <li key={campo}>
+                    <strong className="font-semibold">
+                      {rotuloDoCampo(campo)}:
+                    </strong>{" "}
+                    {mensagens.join(" ")}
+                  </li>
                 ))}
               </ul>
             )}
@@ -266,7 +329,7 @@ export function AcoesDaReserva({
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div ref={acoesRef} className="flex flex-wrap gap-2">
           {podeEncerrar && !formularioAberto && (
             <Button
               onClick={() => {
@@ -299,6 +362,7 @@ export function AcoesDaReserva({
 
         {formularioAberto && (
           <FormularioDeDevolucao
+            containerRef={formularioRef}
             alvos={alvos}
             tudoBem={tudoBem}
             alvo={alvo}
@@ -351,6 +415,7 @@ export function AcoesDaReserva({
 // ---------------------------------------------------------------------------
 
 function FormularioDeDevolucao({
+  containerRef,
   alvos,
   tudoBem,
   alvo,
@@ -369,6 +434,8 @@ function FormularioDeDevolucao({
   onEnviar,
   onFechar,
 }: {
+  /** Recebe o foco quando o formulário abre. */
+  containerRef: RefObject<HTMLDivElement | null>;
   alvos: AlvoDeOcorrencia[];
   tudoBem: boolean | null;
   alvo: string;
@@ -388,7 +455,11 @@ function FormularioDeDevolucao({
   onFechar: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <div
+      ref={containerRef}
+      tabIndex={-1}
+      className="rounded-lg border border-slate-200 bg-slate-50 p-4 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+    >
       <fieldset>
         <legend className="text-sm font-semibold text-slate-900">
           Ocorreu tudo bem com os equipamentos?
@@ -415,7 +486,10 @@ function FormularioDeDevolucao({
           <SelectField
             label="O que teve problema?"
             value={alvo}
-            options={alvos}
+            options={alvos.map((item) => ({
+              value: item.valor,
+              label: item.rotulo,
+            }))}
             error={errosCampo["incident.targetType"]}
             onChange={(evento) => setAlvo(evento.target.value)}
             hint="Só é possível registrar problemas nos itens desta reserva."
@@ -460,6 +534,14 @@ function FormularioDeDevolucao({
             error={errosCampo.notes}
             onChange={(evento) => setObservacoes(evento.target.value)}
           />
+
+          {/* Encerrar a reserva não tem volta pelo sistema; dizer isso antes do
+              clique evita a confirmação extra num formulário já longo. */}
+          <Alert tone="warning">
+            Ao confirmar, a reserva é encerrada e os equipamentos voltam para a
+            agenda. Não é possível desfazer pelo sistema — se errar algo, procure
+            a supervisão.
+          </Alert>
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button onClick={onEnviar} loading={enviando}>
@@ -533,6 +615,17 @@ const ACAO_LABEL: Record<string, string> = {
 };
 
 /**
+ * Descrição da ação no histórico.
+ *
+ * O mapa cobre as ações que a API registra hoje; se uma nova entrar antes de
+ * ganhar rótulo, o professor lê "Reserva atualizada" em vez da chave crua
+ * `reserva.alguma_coisa`.
+ */
+function rotuloDaAcao(acao: string): string {
+  return ACAO_LABEL[acao] ?? "Reserva atualizada";
+}
+
+/**
  * Histórico em seção recolhível.
  *
  * A busca só acontece quando o professor abre a seção: na maioria das visitas
@@ -579,23 +672,39 @@ export function HistoricoDaReserva({
           }
         }}
       >
-        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-4 py-3 text-base font-semibold text-slate-900 sm:px-5">
-          Histórico da reserva
+        {/* O título vai dentro do `summary` como h2: assim ele entra na lista de
+            cabeçalhos junto com os outros cartões da página, em vez de ser só um
+            texto em negrito. */}
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-4 py-3 sm:px-5">
+          <h2 className="text-base font-semibold text-slate-900">
+            Histórico da reserva
+          </h2>
           <span aria-hidden="true" className="text-sm text-slate-500">
             ver
           </span>
         </summary>
 
         <div
-          aria-live="polite"
           aria-busy={carregando}
           className="border-t border-slate-200 px-4 py-4 sm:px-5"
         >
+          {/* Só a linha de situação é região viva: marcar a lista inteira faria
+              o leitor de tela recitar todos os registros ao abrir a seção. */}
+          <p aria-live="polite" className="sr-only">
+            {carregando
+              ? "Carregando o histórico da reserva."
+              : erro
+                ? "Não foi possível carregar o histórico."
+                : itens !== null
+                  ? `Histórico carregado com ${itens.length} registro(s).`
+                  : ""}
+          </p>
+
           {carregando && <Spinner label="Carregando o histórico..." />}
 
           {erro && (
             <Alert tone="danger" title="Falha ao carregar">
-              {erro}
+              {erro} Feche e abra a seção para tentar de novo.
             </Alert>
           )}
 
@@ -613,7 +722,7 @@ export function HistoricoDaReserva({
                   className="border-l-2 border-slate-200 pl-3 text-sm"
                 >
                   <p className="font-medium text-slate-900">
-                    {ACAO_LABEL[item.action] ?? item.action}
+                    {rotuloDaAcao(item.action)}
                   </p>
                   {item.summary && (
                     <p className="mt-0.5 text-slate-600">{item.summary}</p>

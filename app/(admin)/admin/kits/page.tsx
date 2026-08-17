@@ -216,10 +216,19 @@ export default async function KitsPage({
                 ? "Ajuste ou limpe os filtros acima. Kits desativados só aparecem quando você marca “incluir desativados”."
                 : "Cadastre a primeira maleta ou carrinho para que os professores possam reservá-la. Depois vincule os notebooks e o kit de carregadores."
             }
+            // Com filtro aplicado, o caminho de saída é limpar o recorte — e
+            // não cadastrar um kit, que provavelmente já existe e só está
+            // escondido pelos filtros.
             action={
-              <Link href="/admin/kits/novo" className={BOTAO_PRIMARIO}>
-                Cadastrar kit
-              </Link>
+              temFiltro ? (
+                <Link href="/admin/kits" className={BOTAO_PRIMARIO}>
+                  Limpar filtros
+                </Link>
+              ) : (
+                <Link href="/admin/kits/novo" className={BOTAO_PRIMARIO}>
+                  Cadastrar kit
+                </Link>
+              )
             }
           />
         ) : (
@@ -248,14 +257,18 @@ export default async function KitsPage({
                           </Badge>
                         </div>
 
-                        <dl className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
+                        {/* Uma coluna por padrão: os selos não quebram linha e
+                            textos como “acima da capacidade” esticariam a
+                            coluna, empurrando a página inteira para o lado em
+                            telas de 360px. */}
+                        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                          <div className="min-w-0">
                             <dt className="text-xs text-slate-500">Notebooks</dt>
                             <dd className="mt-0.5">
                               <Badge tone={comp.tom}>{comp.texto}</Badge>
                             </dd>
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <dt className="text-xs text-slate-500">
                               Carregadores
                             </dt>
@@ -263,7 +276,7 @@ export default async function KitsPage({
                               <Badge tone={carr.tom}>{carr.texto}</Badge>
                             </dd>
                           </div>
-                          <div className="col-span-2">
+                          <div className="min-w-0 sm:col-span-2">
                             <dt className="text-xs text-slate-500">
                               Localização
                             </dt>

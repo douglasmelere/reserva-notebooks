@@ -20,6 +20,11 @@ import { GestaoUsuario } from "./gestao";
 
 export const dynamic = "force-dynamic";
 
+// Sem isto, a aba do navegador ficava só com "Reserva de Notebooks" — as demais
+// telas de usuários já se identificam, e quem abre várias fichas em abas
+// paralelas não conseguia distinguir uma da outra.
+export const metadata = { title: "Ficha do usuário" };
+
 const ROTULO_PERFIL: Record<Role, string> = {
   PROFESSOR: "Professor(a)",
   SUPERVISOR: "Supervisão",
@@ -262,6 +267,9 @@ function paresDeMudanca(valor: unknown): [string, unknown][] {
   return Object.entries(valor as Record<string, unknown>);
 }
 
+/** O JSON da auditoria serializa `Date` como ISO 8601 — nunca em formato local. */
+const ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+
 function formatarValor(chave: string, valor: unknown): string {
   if (valor === null || valor === undefined || valor === "") return "vazio";
   if (typeof valor === "boolean") {
@@ -272,6 +280,14 @@ function formatarValor(chave: string, valor: unknown): string {
   }
   if (valor === "SUPERVISOR") return "Supervisão";
   if (valor === "PROFESSOR") return "Professor(a)";
-  if (typeof valor === "string" || typeof valor === "number") return String(valor);
+  if (typeof valor === "string") {
+    // "2026-08-17T14:30:00.000Z" no meio do histórico não é lido por ninguém.
+    if (ISO_8601.test(valor)) {
+      const data = new Date(valor);
+      if (!Number.isNaN(data.getTime())) return formatDateTimeBR(data);
+    }
+    return valor;
+  }
+  if (typeof valor === "number") return String(valor);
   return JSON.stringify(valor);
 }

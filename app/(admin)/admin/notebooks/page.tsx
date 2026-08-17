@@ -170,10 +170,19 @@ export default async function NotebooksPage({
                 ? "Ajuste o status, o kit ou a busca. A busca procura por patrimônio, número de série e apelido."
                 : "Cadastre os equipamentos um a um ou use o cadastro em lote, que gera patrimônios sequenciais a partir de um prefixo."
             }
+            // Com filtro aplicado, o caminho de saída é limpar o recorte — e
+            // não cadastrar equipamento, que provavelmente já existe e só está
+            // escondido pelos filtros.
             action={
-              <Link href="/admin/notebooks/lote" className={BOTAO_PRIMARIO}>
-                Cadastrar em lote
-              </Link>
+              temFiltro ? (
+                <Link href="/admin/notebooks" className={BOTAO_PRIMARIO}>
+                  Limpar filtros
+                </Link>
+              ) : (
+                <Link href="/admin/notebooks/lote" className={BOTAO_PRIMARIO}>
+                  Cadastrar em lote
+                </Link>
+              )
             }
           />
         ) : (
@@ -204,19 +213,23 @@ export default async function NotebooksPage({
                       </div>
 
                       <dl className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
+                        {/* Nome de kit e número de série são textos livres e
+                            podem vir sem espaços; sem `min-w-0` + quebra, um
+                            valor longo estica a coluna e a página passa a rolar
+                            na horizontal no celular. */}
+                        <div className="min-w-0">
                           <dt className="text-xs text-slate-500">Kit</dt>
-                          <dd className="text-slate-800">
+                          <dd className="break-words text-slate-800">
                             {notebook.kit ? notebook.kit.name : "Avulso"}
                           </dd>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <dt className="text-xs text-slate-500">Série</dt>
-                          <dd className="text-slate-800">
+                          <dd className="break-words text-slate-800">
                             {notebook.serialNumber ?? "—"}
                           </dd>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <dt className="text-xs text-slate-500">
                             Ocorrências
                           </dt>
@@ -224,7 +237,7 @@ export default async function NotebooksPage({
                             {notebook.totalOcorrencias}
                           </dd>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <dt className="text-xs text-slate-500">Reservas</dt>
                           <dd className="text-slate-800 tabular-nums">
                             {notebook.totalReservas}

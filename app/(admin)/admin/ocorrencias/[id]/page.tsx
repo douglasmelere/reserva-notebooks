@@ -47,6 +47,19 @@ const ACAO_LABEL: Record<string, string> = {
   "ocorrencia.anexar": "Foto anexada",
 };
 
+/**
+ * Uma ação nova pode entrar na trilha antes de ganhar rótulo aqui. Em vez de
+ * jogar a chave crua ("ocorrencia.reabrir") como título, mostramos uma frase —
+ * e a chave técnica segue na linha de metadados, onde a supervisão a encontra
+ * se precisar abrir um chamado.
+ */
+function rotularAcao(acao: string): { titulo: string; chaveCrua: string | null } {
+  const conhecida = ACAO_LABEL[acao];
+  return conhecida
+    ? { titulo: conhecida, chaveCrua: null }
+    : { titulo: "Movimentação registrada", chaveCrua: acao };
+}
+
 /** Onde a supervisão libera cada tipo de equipamento. */
 const TELA_DO_INVENTARIO: Record<string, { href: string; nome: string }> = {
   NOTEBOOK: { href: "/admin/notebooks", nome: "Notebooks" },
@@ -207,7 +220,9 @@ export default async function AdminDetalheOcorrenciaPage({
             <Card>
               <CardHeader title="Relato do docente" />
               <CardBody>
-                <p className="text-sm whitespace-pre-line text-slate-800">
+                {/* Texto livre: `break-words` evita que um número de série ou
+                    endereço colado sem espaços estoure a largura no celular. */}
+                <p className="text-sm break-words whitespace-pre-line text-slate-800">
                   {ocorrencia.description}
                 </p>
               </CardBody>
@@ -261,26 +276,32 @@ export default async function AdminDetalheOcorrenciaPage({
                   />
                 ) : (
                   <ol className="flex flex-col gap-3">
-                    {historico.map((registro) => (
-                      <li
-                        key={registro.id}
-                        className="border-l-2 border-slate-200 pl-3"
-                      >
-                        <p className="text-sm font-medium text-slate-900">
-                          {ACAO_LABEL[registro.action] ?? registro.action}
-                        </p>
-                        {registro.summary && (
-                          <p className="text-sm text-slate-700">{registro.summary}</p>
-                        )}
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {formatDateTimeBR(registro.createdAt)}
-                          {registro.actor
-                            ? ` · ${registro.actor.fullName} (${registro.actor.username})`
-                            : " · sistema"}
-                          {registro.ip ? ` · IP ${registro.ip}` : ""}
-                        </p>
-                      </li>
-                    ))}
+                    {historico.map((registro) => {
+                      const acao = rotularAcao(registro.action);
+                      return (
+                        <li
+                          key={registro.id}
+                          className="border-l-2 border-slate-200 pl-3"
+                        >
+                          <p className="text-sm font-medium text-slate-900">
+                            {acao.titulo}
+                          </p>
+                          {registro.summary && (
+                            <p className="text-sm break-words text-slate-700">
+                              {registro.summary}
+                            </p>
+                          )}
+                          <p className="mt-0.5 text-xs break-words text-slate-500">
+                            {formatDateTimeBR(registro.createdAt)}
+                            {registro.actor
+                              ? ` · ${registro.actor.fullName} (${registro.actor.username})`
+                              : " · sistema"}
+                            {registro.ip ? ` · IP ${registro.ip}` : ""}
+                            {acao.chaveCrua ? ` · ${acao.chaveCrua}` : ""}
+                          </p>
+                        </li>
+                      );
+                    })}
                   </ol>
                 )}
               </CardBody>

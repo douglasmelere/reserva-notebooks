@@ -179,7 +179,11 @@ export const GET = handle(async (request: Request) => {
         ]
           .filter(Boolean)
           .join(" · "),
-        href: `/reservas/${reserva.id}`,
+        // Não existe rota `/reservas/[id]`: a ficha da reserva mora em lugares
+        // diferentes conforme o perfil, como no restante do sistema.
+        href: supervisor
+          ? `/admin/reservas/${reserva.id}`
+          : `/minhas-reservas/${reserva.id}`,
       })),
     },
     {

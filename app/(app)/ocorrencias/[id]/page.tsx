@@ -35,12 +35,41 @@ const TOM_SEVERIDADE: Record<IncidentSeverity, BadgeTone> = {
   CRITICA: "danger",
 };
 
+/**
+ * O selo diz em que pé está a ocorrência; isto diz o que o professor faz agora.
+ * Sem esta frase, "Em análise" é só uma palavra na tela — ninguém sabe se
+ * precisa cobrar alguém, esperar ou registrar de novo.
+ */
+const PROXIMO_PASSO: Record<IncidentStatus, string> = {
+  ABERTA:
+    "A supervisão ainda não começou a análise. Não é preciso fazer nada: a resposta aparece nesta tela e no histórico abaixo.",
+  EM_ANALISE:
+    "A supervisão está avaliando o problema. Se ele voltar a acontecer ou você lembrar de algum detalhe, avise a supervisão.",
+  EM_MANUTENCAO:
+    "O equipamento está em conserto. Confirme com a supervisão antes de contar com ele na sua próxima aula.",
+  RESOLVIDA:
+    "Problema encerrado. Se acontecer de novo, registre um novo problema — é assim que a supervisão enxerga a reincidência.",
+  DESCARTADA:
+    "A supervisão encerrou sem manutenção. O motivo está na resposta abaixo; se você não concordar, procure a supervisão.",
+  RECORRENTE:
+    "Este problema já se repetiu neste equipamento. A supervisão está acompanhando — evite contar com ele até nova posição.",
+};
+
 /** Ações de auditoria que caem nesta entidade, em linguagem de quem lê. */
 const ACAO_LABEL: Record<string, string> = {
   "ocorrencia.registrar": "Ocorrência registrada",
   "ocorrencia.atualizar": "Ocorrência atualizada",
   "ocorrencia.anexar": "Foto anexada",
 };
+
+/**
+ * O professor nunca vê a chave técnica da trilha de auditoria. Se uma ação nova
+ * for gravada antes de ganhar rótulo aqui, ele lê uma frase — não
+ * "ocorrencia.reabrir" — e o resumo logo abaixo continua explicando o que houve.
+ */
+function rotularAcao(acao: string): string {
+  return ACAO_LABEL[acao] ?? "Movimentação registrada";
+}
 
 export default async function DetalheOcorrenciaPage({
   params,
@@ -93,6 +122,10 @@ export default async function DetalheOcorrenciaPage({
             com a supervisão antes da sua próxima aula.
           </Alert>
         )}
+
+        <Alert tone="info" title={`Situação: ${ocorrencia.statusLabel}`}>
+          {PROXIMO_PASSO[ocorrencia.status]}
+        </Alert>
 
         <Card>
           <CardHeader title="Resumo" />
@@ -147,7 +180,10 @@ export default async function DetalheOcorrenciaPage({
         <Card>
           <CardHeader title="O que foi relatado" />
           <CardBody>
-            <p className="text-sm whitespace-pre-line text-slate-800">
+            {/* Texto livre do professor: sem `break-words`, um endereço ou
+                número de série colado sem espaços faria a página inteira rolar
+                na horizontal no celular. */}
+            <p className="text-sm break-words whitespace-pre-line text-slate-800">
               {ocorrencia.description}
             </p>
           </CardBody>
@@ -164,7 +200,7 @@ export default async function DetalheOcorrenciaPage({
               }
             />
             <CardBody>
-              <p className="text-sm whitespace-pre-line text-slate-800">
+              <p className="text-sm break-words whitespace-pre-line text-slate-800">
                 {ocorrencia.resolution}
               </p>
             </CardBody>
@@ -225,10 +261,12 @@ export default async function DetalheOcorrenciaPage({
                     className="border-l-2 border-slate-200 pl-3"
                   >
                     <p className="text-sm font-medium text-slate-900">
-                      {ACAO_LABEL[registro.action] ?? registro.action}
+                      {rotularAcao(registro.action)}
                     </p>
                     {registro.summary && (
-                      <p className="text-sm text-slate-700">{registro.summary}</p>
+                      <p className="text-sm break-words text-slate-700">
+                        {registro.summary}
+                      </p>
                     )}
                     <p className="mt-0.5 text-xs text-slate-500">
                       {formatDateTimeBR(registro.createdAt)}

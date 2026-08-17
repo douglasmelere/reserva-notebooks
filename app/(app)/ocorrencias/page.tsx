@@ -84,13 +84,26 @@ export default async function MinhasOcorrenciasPage({
         }
       />
 
-      {items.length === 0 ? (
+      {total === 0 ? (
         <EmptyState
           title="Você ainda não registrou nenhum problema"
           description="Notebook que não liga, carregador faltando na maleta, tela trincada: registre aqui para a supervisão tomar providência e para o equipamento não chegar quebrado na próxima aula."
           action={
             <Link href="/ocorrencias/nova" className={BOTAO_PRIMARIO}>
               Registrar problema
+            </Link>
+          }
+        />
+      ) : items.length === 0 ? (
+        // `?pagina=` vem da URL e pode apontar para além da última página. Sem
+        // este caso, a tela dizia "você ainda não registrou nenhum problema"
+        // para quem tem registros — e sem nenhum caminho de volta.
+        <EmptyState
+          title="Esta página não tem ocorrências"
+          description={`Sua lista vai até a página ${totalPaginas}. Volte para o começo para ver seus registros.`}
+          action={
+            <Link href="/ocorrencias" className={BOTAO_SECUNDARIO}>
+              Ir para a primeira página
             </Link>
           }
         />
@@ -115,7 +128,7 @@ export default async function MinhasOcorrenciasPage({
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold break-words text-slate-900">
                         {ocorrencia.code} · {ocorrencia.alvoLabel}
                       </p>
                       <p className="mt-0.5 text-sm text-slate-600">
@@ -123,8 +136,10 @@ export default async function MinhasOcorrenciasPage({
                         {formatDateTimeBR(new Date(ocorrencia.createdAt))}
                       </p>
                       {/* Duas linhas bastam para reconhecer a ocorrência na lista;
-                          o texto completo fica no detalhe. */}
-                      <p className="mt-2 line-clamp-2 text-sm text-slate-700">
+                          o texto completo fica no detalhe. `break-words` porque
+                          o relato é texto livre: um número de série colado sem
+                          espaços empurraria o cartão além da tela do celular. */}
+                      <p className="mt-2 line-clamp-2 text-sm break-words text-slate-700">
                         {ocorrencia.description}
                       </p>
                     </div>

@@ -84,7 +84,15 @@ export const loginSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  fullName: z.string().trim().min(3, "Informe o nome completo").max(120).optional(),
+  // Sem a mensagem, o Zod devolve o padrão em inglês ("Too big: expected
+  // string to have <=120 characters") e o formulário de perfil mostra isso
+  // direto no campo, para o professor.
+  fullName: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome completo")
+    .max(120, "Nome muito longo")
+    .optional(),
   email: z
     .string()
     .trim()
@@ -108,7 +116,15 @@ export const adminCreateUserSchema = registerSchema.extend({
 });
 
 export const adminUpdateUserSchema = z.object({
-  fullName: z.string().trim().min(3).max(120).optional(),
+  // As mensagens são obrigatórias: este esquema também roda no navegador, e o
+  // padrão do Zod é em inglês ("Too small: expected string to have >=3
+  // characters") — texto que ia parar na tela da supervisão.
+  fullName: z
+    .string()
+    .trim()
+    .min(3, "Informe o nome completo")
+    .max(120, "Nome muito longo")
+    .optional(),
   email: z
     .string()
     .trim()

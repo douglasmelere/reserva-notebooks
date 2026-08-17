@@ -183,13 +183,15 @@ export default async function MinhasReservasPage({
           <SecaoDeReservas
             titulo="Próximas"
             descricao="Reservas que ainda vão acontecer ou estão em andamento."
-            vazio="Nenhuma reserva em andamento neste recorte."
+            vazioTitulo="Nenhuma reserva em andamento"
+            vazioDescricao="Entre as reservas que você está vendo, nenhuma ainda vai acontecer. Amplie o período do filtro ou faça uma nova reserva."
             reservas={proximas}
           />
           <SecaoDeReservas
             titulo="Anteriores"
             descricao="Reservas já encerradas, devolvidas ou canceladas."
-            vazio="Nenhuma reserva anterior neste recorte."
+            vazioTitulo="Nenhuma reserva anterior"
+            vazioDescricao="Entre as reservas que você está vendo, nenhuma foi encerrada ainda. Ajuste o período do filtro para procurar em outras datas."
             reservas={anteriores}
           />
         </div>
@@ -203,12 +205,14 @@ export default async function MinhasReservasPage({
 function SecaoDeReservas({
   titulo,
   descricao,
-  vazio,
+  vazioTitulo,
+  vazioDescricao,
   reservas,
 }: {
   titulo: string;
   descricao: string;
-  vazio: string;
+  vazioTitulo: string;
+  vazioDescricao: string;
   reservas: ReservationWithRelations[];
 }) {
   return (
@@ -217,9 +221,9 @@ function SecaoDeReservas({
       <p className="mt-0.5 mb-3 text-sm text-slate-600">{descricao}</p>
 
       {reservas.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-600">
-          {vazio}
-        </p>
+        // O mesmo `EmptyState` das outras telas, em vez de uma caixa tracejada
+        // montada à mão que já estava divergindo do primitivo.
+        <EmptyState title={vazioTitulo} description={vazioDescricao} />
       ) : (
         // Cartões empilhados em qualquer largura: a reserva tem seis campos
         // relevantes e uma tabela com isso fica ilegível no celular.
@@ -243,12 +247,17 @@ function CartaoDeReserva({ reserva }: { reserva: ReservationWithRelations }) {
       <CardBody>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-mono text-xs tracking-wide text-slate-500">
+            {/* Sem o rótulo, o leitor de tela anuncia "RS-4K7P2M" solto, sem
+                dizer que aquilo é o código da reserva. */}
+            <p className="font-mono text-xs tracking-wide break-all text-slate-500">
+              <span className="sr-only">Código da reserva: </span>
               {reserva.code}
             </p>
-            <p className="mt-0.5 text-base font-semibold text-slate-900">
+            {/* Cabeçalho de nível 3 sob o h2 da seção: quem navega por títulos
+                consegue pular de uma reserva para a outra. */}
+            <h3 className="mt-0.5 text-base font-semibold text-slate-900">
               {formatIntervalBR(reserva.startsAt, reserva.endsAt, reserva.allDay)}
-            </p>
+            </h3>
           </div>
           <Badge tone={TOM_POR_SITUACAO[reserva.status]}>
             {RESERVATION_STATUS_LABEL[reserva.status]}
@@ -260,19 +269,23 @@ function CartaoDeReserva({ reserva }: { reserva: ReservationWithRelations }) {
             <dt className="text-xs font-medium tracking-wide text-slate-500 uppercase">
               Equipamentos
             </dt>
-            <dd className="mt-0.5 text-sm text-slate-800">
-              <ul className="space-y-0.5">
-                {equipamentos.map((rotulo, indice) => (
-                  <li key={`${reserva.id}-${indice}`}>{rotulo}</li>
-                ))}
-              </ul>
+            <dd className="mt-0.5 text-sm break-words text-slate-800">
+              {equipamentos.length === 0 ? (
+                "Nenhum equipamento vinculado. Procure a supervisão."
+              ) : (
+                <ul className="space-y-0.5">
+                  {equipamentos.map((rotulo, indice) => (
+                    <li key={`${reserva.id}-${indice}`}>{rotulo}</li>
+                  ))}
+                </ul>
+              )}
             </dd>
           </div>
           <div>
             <dt className="text-xs font-medium tracking-wide text-slate-500 uppercase">
               Sala
             </dt>
-            <dd className="mt-0.5 text-sm text-slate-800">
+            <dd className="mt-0.5 text-sm break-words text-slate-800">
               {reserva.room || "Não informada"}
             </dd>
 
@@ -281,7 +294,7 @@ function CartaoDeReserva({ reserva }: { reserva: ReservationWithRelations }) {
                 <dt className="mt-2 text-xs font-medium tracking-wide text-slate-500 uppercase">
                   Turma e disciplina
                 </dt>
-                <dd className="mt-0.5 text-sm text-slate-800">
+                <dd className="mt-0.5 text-sm break-words text-slate-800">
                   {[reserva.className, reserva.subject]
                     .filter(Boolean)
                     .join(" · ")}

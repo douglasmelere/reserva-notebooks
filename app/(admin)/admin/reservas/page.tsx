@@ -299,23 +299,31 @@ async function VisaoLista({
 
   if (resultado.items.length === 0) {
     return (
-      <EmptyState
-        title={
-          filtrosAtivos
-            ? "Nenhuma reserva encontrada com esses filtros"
-            : "Ainda não há reservas registradas"
-        }
-        description={
-          filtrosAtivos
-            ? "Tente ampliar o período, remover o filtro de situação ou limpar a busca. Os filtros ficam na barra acima."
-            : "Assim que um professor reservar um kit ou notebook, a reserva aparece aqui. Você também pode criar uma reserva em nome de um professor."
-        }
-        action={
-          <Link className={botaoPrimario} href="/admin/reservas/nova">
-            Criar reserva para um professor
-          </Link>
-        }
-      />
+      <section aria-label="Reservas encontradas" className="flex flex-col gap-4">
+        {/* Aplicar um filtro troca esta lista sem recarregar a página: sem um
+            aviso ao vivo, quem usa leitor de tela não sabe que o resultado
+            chegou nem quantas reservas vieram. */}
+        <p aria-live="polite" className="sr-only">
+          Nenhuma reserva encontrada com os filtros atuais.
+        </p>
+        <EmptyState
+          title={
+            filtrosAtivos
+              ? "Nenhuma reserva encontrada com esses filtros"
+              : "Ainda não há reservas registradas"
+          }
+          description={
+            filtrosAtivos
+              ? "Tente ampliar o período, remover o filtro de situação ou limpar a busca. Os filtros ficam na barra acima."
+              : "Assim que um professor reservar um kit ou notebook, a reserva aparece aqui. Você também pode criar uma reserva em nome de um professor."
+          }
+          action={
+            <Link className={botaoPrimario} href="/admin/reservas/nova">
+              Criar reserva para um professor
+            </Link>
+          }
+        />
+      </section>
     );
   }
 
@@ -335,6 +343,10 @@ async function VisaoLista({
 
   return (
     <section aria-label="Reservas encontradas" className="flex flex-col gap-4">
+      <p aria-live="polite" className="sr-only">
+        {`${resultado.total} reserva(s) encontrada(s). Exibindo a página ${resultado.page} de ${totalPaginas}.`}
+      </p>
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Reservas encontradas" value={resultado.total} />
         <Stat
@@ -379,6 +391,9 @@ async function VisaoLista({
                   className={`${botaoSecundario} mt-1 w-full`}
                 >
                   Abrir e gerenciar
+                  {/* Sem isto, a lista de links do leitor de tela repete
+                      "Abrir e gerenciar" uma vez por cartão, sem dizer qual. */}
+                  <span className="sr-only"> a reserva {linha.code}</span>
                 </Link>
               </CardBody>
             </Card>

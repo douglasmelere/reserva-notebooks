@@ -116,6 +116,15 @@ export default async function UsuariosPage({
           }
         />
         <CardBody>
+          {/* Aplicar um filtro é navegação do lado do cliente: a lista troca
+              sem recarregar a página e, sem esta região, quem usa leitor de
+              tela não recebe aviso nenhum de que o resultado mudou. */}
+          <p role="status" aria-live="polite" className="sr-only">
+            {total === 0
+              ? "Nenhuma conta encontrada com os filtros atuais."
+              : `${total} conta(s) encontrada(s). Página ${page} de ${totalPaginas}.`}
+          </p>
+
           {items.length === 0 ? (
             <EmptyState
               title={

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/field";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Alert, Card, CardBody, CardHeader } from "@/components/ui/primitives";
+import { useDisclosureFocus } from "@/components/ui/use-disclosure-focus";
 import type { KitStatus, NotebookStatus } from "@/generated/prisma/enums";
 
 /**
@@ -387,7 +388,16 @@ export function PainelDoNotebook({
 }) {
   const router = useRouter();
 
-  const [editando, setEditando] = useState(false);
+  // O botão "Editar cadastro" dá lugar ao formulário; o hook garante que o
+  // foco do teclado acompanhe essa troca nos dois sentidos.
+  const {
+    aberto: editando,
+    abrir: abrirEdicao,
+    fechar: fecharEdicao,
+    painelRef: formularioRef,
+    gatilhoRef: botaoEditarRef,
+  } = useDisclosureFocus();
+
   const [status, setStatus] = useState<string>(notebook.status);
   const [kitDestino, setKitDestino] = useState<string>(notebook.kitId ?? "");
 
@@ -542,7 +552,12 @@ export function PainelDoNotebook({
         description="Editar cadastro, alterar status, transferir de kit e desativar."
         action={
           !editando && (
-            <Button variant="outline" onClick={() => setEditando(true)}>
+            <Button
+              ref={botaoEditarRef}
+              variant="outline"
+              aria-expanded={false}
+              onClick={abrirEdicao}
+            >
               Editar cadastro
             </Button>
           )
@@ -579,12 +594,19 @@ export function PainelDoNotebook({
         )}
 
         {editando ? (
-          <NotebookForm
-            notebook={notebook}
-            kits={kits}
-            onSaved={() => setEditando(false)}
-            onCancel={() => setEditando(false)}
-          />
+          <div
+            ref={formularioRef}
+            tabIndex={-1}
+            aria-label={`Editar cadastro do notebook ${notebook.assetTag}`}
+            className="focus:outline-none"
+          >
+            <NotebookForm
+              notebook={notebook}
+              kits={kits}
+              onSaved={fecharEdicao}
+              onCancel={fecharEdicao}
+            />
+          </div>
         ) : (
           <>
             <div className="grid gap-4 md:grid-cols-2">

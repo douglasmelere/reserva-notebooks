@@ -158,6 +158,36 @@ function rotuloNotebook(notebook: NotebookAvailability): string {
     : `Notebook ${notebook.assetTag}`;
 }
 
+/** Nome do campo na API → nome que o professor vê na tela. */
+const ROTULO_DO_CAMPO: Record<string, string> = {
+  _: "Dados da reserva",
+  date: "Data",
+  startTime: "Horário de início",
+  endTime: "Horário de término",
+  kitIds: "Equipamentos",
+  notebookIds: "Equipamentos",
+  purpose: "Finalidade",
+  className: "Turma",
+  subject: "Disciplina",
+  room: "Sala",
+  requestedNotebooks: "Quantidade de notebooks",
+  teacherNotes: "Observações",
+};
+
+/**
+ * Rótulo do campo para o resumo de erros.
+ *
+ * Caminhos com índice ("kitIds.0") caem no rótulo da lista, e uma chave que a
+ * API venha a criar sem rótulo aqui vira um texto genérico — o professor nunca
+ * lê o nome interno do campo.
+ */
+function rotuloDoCampo(caminho: string): string {
+  const direto = ROTULO_DO_CAMPO[caminho];
+  if (direto) return direto;
+  const base = caminho.split(".")[0] ?? caminho;
+  return ROTULO_DO_CAMPO[base] ?? "Dados da reserva";
+}
+
 const CLASSE_LINK_BOTAO =
   "inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-medium transition-colors " +
   "focus-visible:outline-2 focus-visible:outline-offset-2";
@@ -203,9 +233,13 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
   const [errosCampo, setErrosCampo] = useState<Record<string, string[]>>({});
   const [conflitos, setConflitos] = useState<Conflito[] | null>(null);
   const [comprovante, setComprovante] = useState<ReservaCriada | null>(null);
+  /** Explica, na etapa 4, por que o professor foi trazido de volta para cá. */
+  const [avisoRecursos, setAvisoRecursos] = useState<string | null>(null);
 
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const primeiraRenderizacao = useRef(true);
+  /** Período já consultado, para não repetir a busca a cada renderização. */
+  const periodoConsultado = useRef<string | null>(null);
 
   // Mover o foco para o título a cada troca de etapa: sem isso, quem navega por
   // teclado ou leitor de tela continua no botão "Continuar" da etapa anterior e
@@ -217,6 +251,8 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
     }
     tituloRef.current?.focus();
   }, [etapa]);
+
+  const chaveDoPeriodo = `${data}|${diaInteiro ? "dia-inteiro" : `${horaInicio}-${horaFim}`}`;
 
   const totalSelecionado = kitsSelecionados.length + notebooksSelecionados.length;
   const limiteAtingido =
@@ -239,8 +275,16 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
    * Trocar data ou horário muda a pergunta "o que está livre?", então as
    * seleções anteriores deixam de valer. Limpar aqui evita reservar um
    * equipamento escolhido para outro período.
+   *
+   * Quando havia algo selecionado, a etapa 4 explica por que a lista voltou
+   * vazia — sem o aviso, o professor acha que o sistema perdeu a escolha dele.
    */
   function limparSelecoes() {
+    setAvisoRecursos(
+      totalSelecionado > 0
+        ? "Você mudou a data ou o horário, então a seleção anterior foi desfeita: o que está livre muda de um período para outro. Escolha os equipamentos novamente nesta etapa."
+        : null,
+    );
     setKitsSelecionados([]);
     setNotebooksSelecionados([]);
     setDisponibilidade(null);
@@ -258,10 +302,28 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
     limparSelecoes();
   }
 
+  /**
+   * Estreitar o tipo descarta o que não cabe mais na reserva. Como o descarte
+   * acontece uma etapa antes da lista, o aviso espera o professor na etapa 4 —
+   * senão ele volta e encontra a seleção menor sem entender o porquê.
+   */
   function alterarTipo(valor: TipoRecurso) {
     setTipo(valor);
+    const perdeNotebooks = valor === "kit" && notebooksSelecionados.length > 0;
+    const perdeKits = valor === "notebooks" && kitsSelecionados.length > 0;
+
     if (valor === "kit") setNotebooksSelecionados([]);
     if (valor === "notebooks") setKitsSelecionados([]);
+
+    if (perdeNotebooks) {
+      setAvisoRecursos(
+        "Você escolheu apenas kit completo, então os notebooks avulsos saíram da seleção. Escolha aqui a maleta ou o carrinho desta reserva.",
+      );
+    } else if (perdeKits) {
+      setAvisoRecursos(
+        "Você escolheu apenas notebooks avulsos, então a maleta ou o carrinho saiu da seleção. Escolha aqui os notebooks desta reserva.",
+      );
+    }
   }
 
   // --- Disponibilidade -----------------------------------------------------
@@ -368,21 +430,26 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
     return null;
   }
 
-  async function avancar() {
+  // A consulta acontece ao entrar na etapa 4 — e não antes — porque só aqui o
+  // período está fechado. Ficar no efeito, e não no botão "Continuar", cobre
+  // também quem volta pelo indicador de etapas depois de trocar a data.
+  useEffect(() => {
+    if (etapa !== 4) return;
+    if (periodoConsultado.current === chaveDoPeriodo && disponibilidade) return;
+    periodoConsultado.current = chaveDoPeriodo;
+    void carregarDisponibilidade();
+    // A busca depende apenas da etapa e do período consultado; incluir a
+    // função nas dependências a refaria a cada digitação de outro campo.
+  }, [etapa, chaveDoPeriodo]);
+
+  function avancar() {
     const problema = validarEtapa(etapa);
     if (problema) {
       setErroEtapa(problema);
       return;
     }
     setErroEtapa(null);
-
-    // A consulta acontece ao entrar na etapa 4, e não antes: só aqui o período
-    // já está fechado e a resposta é sobre o que o professor de fato pediu.
-    if (etapa === 3) {
-      irPara(4);
-      await carregarDisponibilidade();
-      return;
-    }
+    if (etapa === 4) setAvisoRecursos(null);
 
     irPara(etapa + 1);
   }
@@ -462,6 +529,9 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
       atual.filter((id) => !bloqueados.has(`notebook:${id}`)),
     );
     setConflitos(null);
+    setAvisoRecursos(
+      "Tiramos da seleção o que foi reservado por outra pessoa. Escolha outro equipamento para o mesmo período.",
+    );
     irPara(4);
     await carregarDisponibilidade();
   }
@@ -483,6 +553,7 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
     setQuantidade("");
     setObservacoes("");
     setConflitos(null);
+    setAvisoRecursos(null);
     setErroEtapa(null);
     setErrosCampo({});
     setMaiorLiberada(1);
@@ -491,8 +562,10 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
 
   // --- Render --------------------------------------------------------------
 
+  // O indicador já diz "Etapa 3 de 8 — Tipo"; o título da vez traz a pergunta
+  // que a etapa responde, para não repetir a mesma informação duas vezes.
   const tituloEtapa =
-    etapa === 8 ? "Reserva confirmada" : etapaPorNumero(etapa).resumo;
+    etapa === 8 ? "Comprovante da reserva" : etapaPorNumero(etapa).resumo;
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -554,6 +627,7 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
               disponibilidade={disponibilidade}
               carregando={carregandoDisp}
               erro={erroDisp}
+              aviso={avisoRecursos}
               kitsSelecionados={kitsSelecionados}
               notebooksSelecionados={notebooksSelecionados}
               limiteAtingido={limiteAtingido}
@@ -645,11 +719,18 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
             </Alert>
           )}
 
-          {Object.keys(errosCampo).length > 0 && (
+          {/* Resumo dos erros só na confirmação: nas etapas anteriores cada
+              campo já mostra a própria mensagem logo abaixo do controle. */}
+          {etapa === 7 && Object.keys(errosCampo).length > 0 && (
             <Alert tone="danger" title="Corrija os campos abaixo">
               <ul className="list-inside list-disc">
                 {Object.entries(errosCampo).map(([campo, mensagens]) => (
-                  <li key={campo}>{mensagens.join(" ")}</li>
+                  <li key={campo}>
+                    <strong className="font-semibold">
+                      {rotuloDoCampo(campo)}:
+                    </strong>{" "}
+                    {mensagens.join(" ")}
+                  </li>
                 ))}
               </ul>
             </Alert>
@@ -913,6 +994,7 @@ function EtapaEquipamentos({
   disponibilidade,
   carregando,
   erro,
+  aviso,
   kitsSelecionados,
   notebooksSelecionados,
   limiteAtingido,
@@ -926,6 +1008,7 @@ function EtapaEquipamentos({
   disponibilidade: AvailabilityResult | null;
   carregando: boolean;
   erro: string | null;
+  aviso: string | null;
   kitsSelecionados: string[];
   notebooksSelecionados: string[];
   limiteAtingido: boolean;
@@ -975,13 +1058,15 @@ function EtapaEquipamentos({
         </p>
         <Button
           variant="outline"
-          size="sm"
           onClick={onRecarregar}
           loading={carregando}
+          aria-label="Atualizar a disponibilidade dos equipamentos"
         >
           Atualizar
         </Button>
       </div>
+
+      {aviso && <Alert tone="warning">{aviso}</Alert>}
 
       {erro && (
         <Alert tone="danger" title="Falha ao consultar a disponibilidade">
@@ -989,17 +1074,31 @@ function EtapaEquipamentos({
         </Alert>
       )}
 
-      <div aria-live="polite" aria-busy={carregando} className="space-y-5">
-        {carregando && <Spinner label="Consultando equipamentos livres..." />}
+      <div aria-busy={carregando} className="space-y-5">
+        {/* Só a linha de situação é anunciada: marcar a lista inteira como
+            região viva faria o leitor de tela reler dezenas de equipamentos. */}
+        <p aria-live="polite" className="text-sm text-slate-600">
+          {carregando
+            ? "Consultando os equipamentos livres neste período..."
+            : erro
+              ? // Sem isto a linha ficaria em "Consultando..." para sempre depois
+                // de uma falha, contradizendo o aviso de erro logo acima.
+                "A consulta não foi concluída. Use o botão Atualizar para tentar de novo."
+              : !disponibilidade
+                ? "Consultando os equipamentos livres neste período..."
+                : `${kitsLivres.length + notebooksLivres.length} equipamento(s) disponível(is). ${totalSelecionado} de ${config.maxResourcesPerReservation} selecionado(s).`}
+          {!carregando &&
+            !erro &&
+            limiteAtingido &&
+            " Limite atingido — desmarque um item para trocar."}
+        </p>
 
-        {!carregando && !erro && (
+        {(carregando || (!erro && !disponibilidade)) && (
+          <Spinner label="Consultando equipamentos livres..." />
+        )}
+
+        {!carregando && !erro && disponibilidade && (
           <>
-            <p className="text-sm text-slate-600">
-              {totalSelecionado} de {config.maxResourcesPerReservation}{" "}
-              equipamento(s) selecionado(s).
-              {limiteAtingido &&
-                " Limite atingido — desmarque um item para trocar."}
-            </p>
 
             {nadaLivre && (
               <EmptyState
@@ -1131,7 +1230,7 @@ function CartaoKit({
         onChange={onAlternar}
         className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
       />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 break-words">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-slate-900">
             {rotuloKit(kit)}
@@ -1191,7 +1290,7 @@ function CartaoNotebook({
         onChange={onAlternar}
         className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
       />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 break-words">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-slate-900">
             {rotuloNotebook(notebook)}
@@ -1233,7 +1332,7 @@ function CartaoOcupado({
         aria-label={`${titulo} — indisponível neste período`}
         className="mt-0.5 size-5 shrink-0 rounded border-slate-300"
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 break-words">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-slate-700">{titulo}</span>
           <Badge tone="info">Reservado</Badge>
@@ -1314,20 +1413,24 @@ function BotaoWhatsapp({
     }
   }
 
+  // Um nome vazio ou só com espaços deixaria "Falar com  no WhatsApp".
+  const primeiroNome = nome.trim().split(" ")[0] || "o(a) docente";
+
   return (
     <div className="space-y-2">
       <Button
         variant="outline"
-        size="sm"
         loading={carregando}
         onClick={abrir}
         icon={<span aria-hidden="true">💬</span>}
       >
-        Falar com {nome.split(" ")[0]} no WhatsApp
+        Falar com {primeiroNome} no WhatsApp
       </Button>
 
+      {/* A aba bloqueada é uma mudança que acontece sozinha depois do clique:
+          sem região viva, quem usa leitor de tela não fica sabendo do link. */}
       {url && (
-        <p className="text-sm">
+        <p role="status" className="text-sm">
           <a
             href={url}
             target="_blank"
@@ -1487,7 +1590,11 @@ function LinhaResumo({
   return (
     <div className="grid gap-0.5 border-b border-slate-100 py-2 last:border-b-0 sm:grid-cols-3 sm:gap-3">
       <dt className="text-sm font-medium text-slate-500">{rotulo}</dt>
-      <dd className="text-sm text-slate-900 sm:col-span-2">{valor}</dd>
+      {/* `break-words` evita que uma observação com um link longo, colada pelo
+          professor, empurre a página para o lado num celular de 360px. */}
+      <dd className="min-w-0 text-sm break-words text-slate-900 sm:col-span-2">
+        {valor}
+      </dd>
     </div>
   );
 }
@@ -1533,7 +1640,7 @@ function EtapaRevisao({
       <section>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-800">Período</h3>
-          <Button variant="ghost" size="sm" onClick={() => onEditar(1)}>
+          <Button variant="ghost" onClick={() => onEditar(1)}>
             Alterar período
           </Button>
         </div>
@@ -1545,7 +1652,7 @@ function EtapaRevisao({
       <section>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-800">Equipamentos</h3>
-          <Button variant="ghost" size="sm" onClick={() => onEditar(4)}>
+          <Button variant="ghost" onClick={() => onEditar(4)}>
             Alterar equipamentos
           </Button>
         </div>
@@ -1577,12 +1684,12 @@ function EtapaRevisao({
       <section>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-800">Dados da aula</h3>
-          <Button variant="ghost" size="sm" onClick={() => onEditar(5)}>
+          <Button variant="ghost" onClick={() => onEditar(5)}>
             Alterar dados
           </Button>
         </div>
         <dl>
-          <LinhaResumo rotulo="Finalidade" valor={finalidade || "—"} />
+          <LinhaResumo rotulo="Finalidade" valor={finalidade || "Não informada"} />
           <LinhaResumo rotulo="Turma" valor={turma || "Não informada"} />
           <LinhaResumo
             rotulo="Disciplina"
@@ -1736,7 +1843,9 @@ function EtapaComprovante({
         <p className="text-xs font-semibold tracking-wide text-emerald-800 uppercase">
           Código da reserva
         </p>
-        <p className="mt-1 font-mono text-3xl font-bold tracking-wider text-emerald-900">
+        {/* O código pode ganhar sufixo extra em caso de colisão; `break-all` e
+            o tamanho menor no celular impedem que ele estoure a largura. */}
+        <p className="mt-1 font-mono text-2xl font-bold tracking-wider break-all text-emerald-900 sm:text-3xl">
           {reserva.code}
         </p>
       </div>

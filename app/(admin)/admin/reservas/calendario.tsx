@@ -122,7 +122,6 @@ export function Calendario({
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => irPara(deslocaMes(mes, -1))}
               disabled={pendente}
             >
@@ -132,7 +131,6 @@ export function Calendario({
             </Button>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => irPara(hoje.slice(0, 7))}
               disabled={pendente || mes === hoje.slice(0, 7)}
             >
@@ -140,7 +138,6 @@ export function Calendario({
             </Button>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => irPara(deslocaMes(mes, 1))}
               disabled={pendente}
             >
@@ -191,13 +188,16 @@ export function Calendario({
                   : `${total} reserva${total > 1 ? "s" : ""}`;
 
               return (
-                <li key={dia.data}>
+                // `min-w-0` + `overflow-hidden`: numa tela de 360px cada coluna
+                // tem menos de 40px, e sem isso o conteúdo do dia vazaria para
+                // fora da grade e faria a página inteira rolar na horizontal.
+                <li key={dia.data} className="min-w-0">
                   <Link
                     href={linkDoDia(dia.data)}
                     aria-label={`${dia.diaDoMes} de ${nomeDoMes(dia.data.slice(0, 7))}, ${descricao}`}
                     aria-current={dia.ehHoje ? "date" : undefined}
                     className={[
-                      "flex min-h-16 flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors sm:min-h-24 sm:p-2",
+                      "flex min-h-16 flex-col gap-1 overflow-hidden rounded-lg border p-1.5 text-left transition-colors sm:min-h-24 sm:p-2",
                       "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600",
                       dia.doMes
                         ? "border-slate-200 bg-white hover:bg-sky-50"
@@ -205,16 +205,20 @@ export function Calendario({
                       dia.ehHoje ? "ring-2 ring-sky-600 ring-inset" : "",
                     ].join(" ")}
                   >
-                    <span
-                      className={
-                        dia.doMes
-                          ? "text-sm font-semibold text-slate-900 tabular-nums"
-                          : "text-sm text-slate-400 tabular-nums"
-                      }
-                    >
-                      {dia.diaDoMes}
+                    {/* "hoje" quebra para a linha de baixo no celular em vez de
+                        empurrar o número do dia para fora da célula. */}
+                    <span className="flex flex-wrap items-baseline gap-x-1">
+                      <span
+                        className={
+                          dia.doMes
+                            ? "text-sm font-semibold text-slate-900 tabular-nums"
+                            : "text-sm text-slate-400 tabular-nums"
+                        }
+                      >
+                        {dia.diaDoMes}
+                      </span>
                       {dia.ehHoje && (
-                        <span className="ml-1 text-[0.65rem] font-medium text-sky-700">
+                        <span className="text-[0.65rem] font-medium text-sky-700">
                           hoje
                         </span>
                       )}
@@ -222,8 +226,14 @@ export function Calendario({
 
                     {total > 0 ? (
                       <span className="flex flex-col gap-0.5">
-                        <span className="inline-flex w-fit items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[0.7rem] font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset">
-                          {total} reserva{total > 1 ? "s" : ""}
+                        {/* No celular só o número cabe no selo; o rótulo por
+                            extenso volta a partir de `sm`. O leitor de tela
+                            recebe a frase completa pelo `aria-label` do link. */}
+                        <span className="inline-flex w-fit max-w-full items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[0.7rem] font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset">
+                          {total}
+                          <span className="hidden sm:inline">
+                            &nbsp;reserva{total > 1 ? "s" : ""}
+                          </span>
                         </span>
                         <span className="hidden text-[0.7rem] text-slate-500 sm:block">
                           {dia.ocupacao?.kitsOcupados ?? 0} kit(s) ·{" "}
@@ -231,7 +241,9 @@ export function Calendario({
                         </span>
                       </span>
                     ) : (
-                      <span className="text-[0.7rem] text-slate-400">livre</span>
+                      <span className="hidden text-[0.7rem] text-slate-400 sm:block">
+                        livre
+                      </span>
                     )}
                   </Link>
                 </li>
@@ -241,8 +253,9 @@ export function Calendario({
         </div>
 
         <p className="text-xs text-slate-500">
-          A grade conta apenas reservas que ainda ocupam equipamento (solicitada,
-          confirmada, retirada e em uso).
+          O número dentro do selo azul de cada dia é a quantidade de reservas
+          daquele dia. A grade conta apenas reservas que ainda ocupam equipamento
+          (solicitada, confirmada, retirada e em uso). Dias sem selo estão livres.
         </p>
       </CardBody>
     </Card>

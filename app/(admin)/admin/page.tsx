@@ -106,7 +106,7 @@ export default async function PainelPage() {
                     {ROTULO_NIVEL[alerta.nivel]}
                   </Badge>
                   <Link
-                    href={`/reservas/${alerta.reservationId}`}
+                    href={`/admin/reservas/${alerta.reservationId}`}
                     className="font-medium underline underline-offset-2"
                   >
                     {alerta.code}
@@ -245,7 +245,7 @@ export default async function PainelPage() {
                     <Td>
                       {kit.professor.fullName}
                       <Link
-                        href={`/reservas/${kit.reservationId}`}
+                        href={`/admin/reservas/${kit.reservationId}`}
                         className="block text-xs text-sky-800 underline underline-offset-2"
                       >
                         Reserva {kit.reservationCode}

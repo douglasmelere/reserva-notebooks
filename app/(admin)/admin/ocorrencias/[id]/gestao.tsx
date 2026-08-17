@@ -230,6 +230,7 @@ export function GestaoOcorrencia({
             <TextAreaField
               label="Solução aplicada"
               rows={5}
+              maxLength={2000}
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
               error={errosCampo.resolution}
@@ -237,10 +238,17 @@ export function GestaoOcorrencia({
               hint="Obrigatória para resolver ou descartar. Daqui a seis meses este texto é a única memória do que foi feito."
             />
 
-            <div className="flex flex-wrap gap-2">
+            {/* Botão desabilitado sem explicação vira "o sistema travou". A
+                frase diz por que ele está apagado e o que fazer. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <Button type="submit" loading={salvando} disabled={!alterado}>
                 Salvar alterações
               </Button>
+              {!alterado && !salvando && (
+                <p className="text-xs text-slate-500">
+                  Altere um campo acima para habilitar o botão.
+                </p>
+              )}
             </div>
           </form>
         </CardBody>

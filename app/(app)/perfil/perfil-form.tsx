@@ -86,18 +86,19 @@ export function PerfilForm({ inicial }: { inicial: PerfilInicial }) {
 
   return (
     <form onSubmit={enviar} noValidate>
-      <div aria-live="polite">
-        {erroGeral && (
-          <Alert tone="danger" className="mb-4">
-            {erroGeral}
-          </Alert>
-        )}
-        {sucesso && (
-          <Alert tone="success" className="mb-4">
-            {sucesso}
-          </Alert>
-        )}
-      </div>
+      {/* Sem `aria-live` aqui: o próprio `Alert` já é uma região viva
+          (`role="alert"`/`role="status"`), e aninhar as duas faz o leitor de
+          tela ler a mensagem duas vezes. */}
+      {erroGeral && (
+        <Alert tone="danger" className="mb-4">
+          {erroGeral}
+        </Alert>
+      )}
+      {sucesso && (
+        <Alert tone="success" className="mb-4">
+          {sucesso}
+        </Alert>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
