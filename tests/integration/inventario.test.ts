@@ -15,6 +15,7 @@ import {
   listNotebooks,
   setNotebookStatus,
   transferToKit,
+  updateNotebook,
 } from "@/server/notebooks";
 import { createChargerKit, updateChargerKit } from "@/server/chargers";
 import { getAvailability } from "@/server/availability";
@@ -201,6 +202,19 @@ describe("notebooks", () => {
     // Nenhum notebook do lote pode ter entrado: a operação é tudo ou nada.
     const doKit = await prisma.notebook.count({ where: { kitId: kit.id } });
     expect(doKit).toBe(0);
+  });
+
+  it("editar um campo não devolve à circulação um notebook em manutenção", async () => {
+    // Regressão: o esquema de PATCH trazia `status` com o valor padrão mesmo
+    // quando não enviado, e renomear um equipamento quebrado o marcava como
+    // disponível de novo — deixando-o reservável sem ninguém perceber.
+    const notebook = await createTestNotebook({ status: "MANUTENCAO" });
+
+    await updateNotebook(notebook.id, { nickname: "Apelido novo" }, supervisor);
+
+    const atual = await prisma.notebook.findUnique({ where: { id: notebook.id } });
+    expect(atual!.status).toBe("MANUTENCAO");
+    expect(atual!.nickname).toBe("Apelido novo");
   });
 
   it("transfere notebook entre kits e registra na auditoria", async () => {

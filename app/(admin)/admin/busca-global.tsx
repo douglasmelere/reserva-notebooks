@@ -158,9 +158,10 @@ export function BuscaGlobal() {
     }
   }
 
-  const mostrarPainel =
-    aberto && termo.trim().length >= MINIMO_CARACTERES && !carregando;
-  const semResultados = buscou && !erro && opcoes.length === 0;
+  // O painel continua visível durante a busca: escondê-lo a cada tecla faria a
+  // lista piscar no meio da digitação.
+  const mostrarPainel = aberto && termo.trim().length >= MINIMO_CARACTERES;
+  const semResultados = !carregando && buscou && !erro && opcoes.length === 0;
 
   return (
     <div
@@ -201,12 +202,6 @@ export function BuscaGlobal() {
             : ""}
       </p>
 
-      {carregando && (
-        <div className="mt-2">
-          <Spinner label="Buscando..." />
-        </div>
-      )}
-
       {mostrarPainel && (
         <div
           id={listaId}
@@ -214,7 +209,13 @@ export function BuscaGlobal() {
           aria-label="Resultados da busca"
           className="absolute z-20 mt-2 max-h-96 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
         >
-          {erro && (
+          {carregando && (
+            <div className="px-3 py-2">
+              <Spinner label="Buscando..." />
+            </div>
+          )}
+
+          {!carregando && erro && (
             <p className="px-3 py-2 text-sm font-medium text-red-700">{erro}</p>
           )}
 
@@ -225,55 +226,57 @@ export function BuscaGlobal() {
             </p>
           )}
 
-          {!erro && opcoes.length > 0 && (
+          {!carregando && !erro && opcoes.length > 0 && (
             <p className="px-3 pt-1 pb-2 text-xs text-slate-500">
               {opcoes.length} resultado(s)
             </p>
           )}
 
-          {grupos.map((grupo) => (
-            <div key={grupo.tipo} className="pb-1">
-              <p className="px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                <span aria-hidden="true">{ICONE_GRUPO[grupo.tipo]} </span>
-                {grupo.rotulo}
-              </p>
-              <ul>
-                {grupo.itens.map((item) => {
-                  const indice = opcoes.findIndex(
-                    (opcao) => opcao.tipo === grupo.tipo && opcao.id === item.id,
-                  );
-                  const selecionado = indice === ativo;
-                  return (
-                    <li key={`${grupo.tipo}-${item.id}`}>
-                      <Link
-                        id={opcaoId(indice)}
-                        role="option"
-                        aria-selected={selecionado}
-                        href={item.href}
-                        onMouseEnter={() => setAtivo(indice)}
-                        onClick={() => setAberto(false)}
-                        className={cn(
-                          "flex min-h-11 flex-col justify-center rounded-lg px-3 py-2",
-                          selecionado
-                            ? "bg-sky-50 text-sky-900"
-                            : "text-slate-800 hover:bg-slate-100",
-                        )}
-                      >
-                        <span className="truncate text-sm font-medium">
-                          {item.titulo}
-                        </span>
-                        {item.subtitulo && (
-                          <span className="truncate text-xs text-slate-600">
-                            {item.subtitulo}
+          {!carregando &&
+            grupos.map((grupo) => (
+              <div key={grupo.tipo} className="pb-1">
+                <p className="px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <span aria-hidden="true">{ICONE_GRUPO[grupo.tipo]} </span>
+                  {grupo.rotulo}
+                </p>
+                <ul>
+                  {grupo.itens.map((item) => {
+                    const indice = opcoes.findIndex(
+                      (opcao) =>
+                        opcao.tipo === grupo.tipo && opcao.id === item.id,
+                    );
+                    const selecionado = indice === ativo;
+                    return (
+                      <li key={`${grupo.tipo}-${item.id}`}>
+                        <Link
+                          id={opcaoId(indice)}
+                          role="option"
+                          aria-selected={selecionado}
+                          href={item.href}
+                          onMouseEnter={() => setAtivo(indice)}
+                          onClick={() => setAberto(false)}
+                          className={cn(
+                            "flex min-h-11 flex-col justify-center rounded-lg px-3 py-2",
+                            selecionado
+                              ? "bg-sky-50 text-sky-900"
+                              : "text-slate-800 hover:bg-slate-100",
+                          )}
+                        >
+                          <span className="truncate text-sm font-medium">
+                            {item.titulo}
                           </span>
-                        )}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+                          {item.subtitulo && (
+                            <span className="truncate text-xs text-slate-600">
+                              {item.subtitulo}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
         </div>
       )}
     </div>

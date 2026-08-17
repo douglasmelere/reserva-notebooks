@@ -6,10 +6,11 @@ import {
   requireUser,
 } from "@/lib/auth";
 import { handle, json, readJson } from "@/lib/http";
-import { updateNotebookSchema } from "@/lib/validation";
+
 import {
   deactivateNotebook,
   getNotebook,
+  notebookPatchSchema,
   updateNotebook,
 } from "@/server/notebooks";
 
@@ -41,7 +42,7 @@ export const PATCH = handle(async (request: Request, context: RouteContext) => {
   await assertSameOrigin();
 
   const { id } = await context.params;
-  const patch = await readJson(request, updateNotebookSchema);
+  const patch = await readJson(request, notebookPatchSchema);
 
   const result = await updateNotebook(id, patch, actor, {
     ip: await getClientIp(),

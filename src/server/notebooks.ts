@@ -45,9 +45,55 @@ import { assertKitCapacity } from "./kits";
 // Tipos de entrada (derivados dos esquemas Zod para não haver divergência)
 // ---------------------------------------------------------------------------
 
-export type CreateNotebookInput = z.infer<typeof createNotebookSchema>;
-export type UpdateNotebookInput = z.infer<typeof updateNotebookSchema>;
-export type BulkCreateNotebooksInput = z.infer<typeof bulkCreateNotebooksSchema>;
+/**
+ * Tipos de entrada escritos à mão, como em `kits.ts`.
+ *
+ * Derivar com `z.infer` traria a forma de SAÍDA do esquema, em que os campos
+ * de texto opcionais viram `string | null` obrigatórios — obrigando todo
+ * chamador interno (seed, testes, outros serviços) a repetir
+ * `brand: null, model: null, notes: null`. E `z.input` também não serve, porque
+ * os campos com `z.coerce` teriam tipo `unknown`. O objeto já validado pela
+ * rota satisfaz estes tipos naturalmente.
+ */
+/**
+ * Esquema de PATCH de notebook, com o padrão de status neutralizado.
+ *
+ * `updateNotebookSchema` nasce de `createNotebookSchema.partial()`, e o
+ * `.partial()` do Zod NÃO desliga o `.default()` do campo `status`: um PATCH
+ * que só troca o apelido chegaria com `status: "DISPONIVEL"` e devolveria à
+ * circulação um notebook que estava em manutenção. Sobrescrever o campo por um
+ * opcional puro é a mesma defesa que `kitPatchSchema` já usa.
+ */
+export const notebookPatchSchema = updateNotebookSchema.extend({
+  status: notebookStatusSchema.optional(),
+});
+
+export type CreateNotebookInput = {
+  assetTag: string;
+  serialNumber?: string | null;
+  nickname?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  kitId?: string | null;
+  status?: NotebookStatus;
+  notes?: string | null;
+  /** Autoriza ultrapassar a capacidade do kit de destino. */
+  confirmCapacityOverflow?: boolean;
+};
+
+export type UpdateNotebookInput = Partial<CreateNotebookInput>;
+
+export type BulkCreateNotebooksInput = {
+  prefix: string;
+  startNumber: number;
+  quantity: number;
+  padding: number;
+  kitId?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  status?: NotebookStatus;
+  confirmCapacityOverflow?: boolean;
+};
 
 /** Contexto de auditoria comum a todas as mutações. */
 export type MutationContext = {

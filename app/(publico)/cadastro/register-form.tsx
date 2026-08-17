@@ -50,12 +50,21 @@ export function RegisterForm() {
   const [concluidoSemEntrar, setConcluidoSemEntrar] = useState(false);
 
   const avisoRef = useRef<HTMLDivElement>(null);
+  const sucessoRef = useRef<HTMLDivElement>(null);
 
   // O aviso recebe o foco ao aparecer, para quem usa teclado ou leitor de tela
   // não ficar preso no fim do formulário sem saber o que deu errado.
   useEffect(() => {
     if (erro) avisoRef.current?.focus();
   }, [erro]);
+
+  // Esta tela substitui o formulário inteiro, e o elemento que tinha o foco (o
+  // botão de enviar) some junto. Sem mover o foco explicitamente ele voltaria
+  // para o começo da página, e o professor não seria informado nem de que a
+  // conta foi criada nem do que fazer em seguida.
+  useEffect(() => {
+    if (concluidoSemEntrar) sucessoRef.current?.focus();
+  }, [concluidoSemEntrar]);
 
   const temTelefone = phone.trim() !== "";
 
@@ -83,13 +92,14 @@ export function RegisterForm() {
       whatsappOptIn,
     });
 
-    const problemas: Record<string, string[]> = analise.success
-      ? {}
-      : errosPorCampo(analise.error);
-    if (password !== confirmPassword) {
-      problemas.confirmPassword = ["As duas senhas não são iguais."];
-    }
-    if (Object.keys(problemas).length > 0) {
+    const senhasDiferem = password !== confirmPassword;
+    if (!analise.success || senhasDiferem) {
+      const problemas: Record<string, string[]> = analise.success
+        ? {}
+        : errosPorCampo(analise.error);
+      if (senhasDiferem) {
+        problemas.confirmPassword = ["As duas senhas não são iguais."];
+      }
       setCampos(problemas);
       setErro({
         codigo: "DADOS_INVALIDOS",
@@ -97,7 +107,6 @@ export function RegisterForm() {
       });
       return;
     }
-    if (!analise.success) return; // inalcançável; estreita o tipo para o TypeScript
 
     const dados = analise.data;
     setEnviando(true);
@@ -137,7 +146,11 @@ export function RegisterForm() {
 
   if (concluidoSemEntrar) {
     return (
-      <div className="flex flex-col gap-4">
+      <div
+        ref={sucessoRef}
+        tabIndex={-1}
+        className="flex flex-col gap-4 focus:outline-none"
+      >
         <Alert tone="success" title="Cadastro concluído">
           Sua conta foi criada, mas não conseguimos entrar automaticamente.
           Acesse a tela de entrada e informe o usuário e a senha que você acabou
@@ -160,15 +173,18 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={cadastrar} noValidate className="flex flex-col gap-4">
-      <div ref={avisoRef} tabIndex={-1} className="focus:outline-none">
-        {erro && (
+      {/* O contêiner só existe quando há aviso: como item de um flex com
+          `gap-4`, um <div> vazio ainda somaria um espaço de 1rem acima do
+          primeiro campo, sem nada que o explicasse na tela. */}
+      {erro && (
+        <div ref={avisoRef} tabIndex={-1} className="focus:outline-none">
           <Alert tone="danger" title="Não foi possível concluir o cadastro">
             {mensagemJaNoCampo
               ? "Confira os campos destacados abaixo."
               : erro.mensagem}
           </Alert>
-        )}
-      </div>
+        </div>
+      )}
 
       <TextField
         label="Nome completo"

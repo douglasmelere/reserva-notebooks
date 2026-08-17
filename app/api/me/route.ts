@@ -16,8 +16,13 @@ export const dynamic = "force-dynamic";
  * realmente enviou. Os esquemas compartilhados normalizam texto opcional
  * ausente para `null`, e sem essa distinção um PATCH só com o nome apagaria
  * e-mail, telefone e departamento.
+ *
+ * A mensagem é escrita aqui porque a padrão do Zod ("Invalid input: expected
+ * record, received array") chegaria em inglês ao professor.
  */
-const corpoBrutoSchema = z.record(z.string(), z.unknown());
+const corpoBrutoSchema = z.record(z.string(), z.unknown(), {
+  error: "Envie os campos a alterar em um objeto JSON.",
+});
 
 export const GET = handle(async () => {
   const user = await requireUser();

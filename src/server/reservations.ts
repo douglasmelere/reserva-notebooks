@@ -94,6 +94,16 @@ export type CreateReservationInput = {
   userAgent?: string | null;
 };
 
+/**
+ * Projeção interna de uma reserva.
+ *
+ * Inclui o telefone do docente porque a camada de serviço precisa dele para
+ * decidir se há contato disponível. Ele NUNCA sai daqui: as rotas devolvem o
+ * resultado por `serializeReservation` (src/server/whatsapp-contact.ts), que
+ * remove o número e o substitui por um booleano. Sem essa serialização,
+ * listar reservas viraria um jeito indireto de baixar a agenda telefônica
+ * do corpo docente.
+ */
 const reservationInclude = {
   user: {
     select: {

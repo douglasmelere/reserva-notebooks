@@ -16,7 +16,9 @@ import {
 export const dynamic = "force-dynamic";
 
 /** Ver o comentário equivalente em `app/api/me/route.ts`. */
-const corpoBrutoSchema = z.record(z.string(), z.unknown());
+const corpoBrutoSchema = z.record(z.string(), z.unknown(), {
+  error: "Envie os campos a alterar em um objeto JSON.",
+});
 
 export const GET = handle(
   async (_request: Request, { params }: { params: Promise<{ id: string }> }) => {

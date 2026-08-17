@@ -52,7 +52,11 @@ export default async function UsuariosPage({
 
   const busca = primeiro(sp.busca)?.trim() ?? "";
   const perfil = comoPerfil(primeiro(sp.perfil));
-  const situacao = primeiro(sp.situacao);
+  // Valor desconhecido na URL é descartado, e não propagado para os links de
+  // paginação: um filtro que não filtra nada só confundiria quem copiar o link.
+  const bruto = primeiro(sp.situacao);
+  const situacao =
+    bruto === "ativos" || bruto === "inativos" ? bruto : undefined;
   const ativo = situacao === "ativos" ? true : situacao === "inativos" ? false : undefined;
   const pagina = Math.max(1, Number(primeiro(sp.pagina) ?? "1") || 1);
 

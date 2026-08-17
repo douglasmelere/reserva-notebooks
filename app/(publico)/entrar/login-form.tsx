@@ -11,7 +11,6 @@ import { loginSchema } from "@/lib/validation";
 /** Só os campos da resposta que a tela realmente usa. */
 type LoginResponse = {
   usuario: { mustChangePassword: boolean };
-  sessaoExpiraEm: string;
 };
 
 type ErroGeral = { codigo: string; mensagem: string };
@@ -51,6 +50,14 @@ export function LoginForm() {
     const analise = loginSchema.safeParse({ username, password });
     if (!analise.success) {
       setCampos(errosPorCampo(analise.error));
+      // O aviso geral também é preenchido aqui, e não só nas falhas vindas da
+      // API: marcar apenas os campos deixaria o clique em "Entrar" sem nenhuma
+      // resposta anunciada nem foco movido, e quem usa teclado ou leitor de
+      // tela ficaria parado no botão sem saber que faltou preencher algo.
+      setErro({
+        codigo: "DADOS_INVALIDOS",
+        mensagem: "Confira os campos destacados abaixo.",
+      });
       return;
     }
 
@@ -87,23 +94,27 @@ export function LoginForm() {
 
   return (
     <form onSubmit={entrar} noValidate className="flex flex-col gap-4">
-      <div ref={avisoRef} tabIndex={-1} className="focus:outline-none">
-        {erro && bloqueadoPorTentativas && (
-          <Alert tone="warning" title="Muitas tentativas seguidas">
-            <p>{erro.mensagem}</p>
-            <p className="mt-1">
-              O bloqueio é temporário e automático: sua conta continua ativa e
-              nada precisa ser feito pela supervisão. Assim que o tempo passar,
-              tente de novo com calma.
-            </p>
-          </Alert>
-        )}
-        {erro && !bloqueadoPorTentativas && (
-          <Alert tone="danger" title="Não foi possível entrar">
-            {erro.mensagem}
-          </Alert>
-        )}
-      </div>
+      {/* O contêiner só existe quando há aviso: como item de um flex com
+          `gap-4`, um <div> vazio ainda somaria um espaço de 1rem acima do
+          primeiro campo, sem nada que o explicasse na tela. */}
+      {erro && (
+        <div ref={avisoRef} tabIndex={-1} className="focus:outline-none">
+          {bloqueadoPorTentativas ? (
+            <Alert tone="warning" title="Muitas tentativas seguidas">
+              <p>{erro.mensagem}</p>
+              <p className="mt-1">
+                O bloqueio é temporário e automático: sua conta continua ativa e
+                nada precisa ser feito pela supervisão. Assim que o tempo passar,
+                tente de novo com calma.
+              </p>
+            </Alert>
+          ) : (
+            <Alert tone="danger" title="Não foi possível entrar">
+              {erro.mensagem}
+            </Alert>
+          )}
+        </div>
+      )}
 
       <TextField
         label="Usuário da intranet"

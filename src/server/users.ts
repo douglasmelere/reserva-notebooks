@@ -692,16 +692,35 @@ export async function changeOwnPassword(
 // Administração de usuários (somente supervisão)
 // ---------------------------------------------------------------------------
 
-/** Filtros aceitos pela listagem administrativa, já validados. */
+/**
+ * Filtros aceitos pela listagem administrativa, já validados.
+ *
+ * Duas escolhas explícitas, porque os filtros vivem na URL e chegam como texto:
+ *
+ *  - o vazio (`?role=&active=`) vale como "sem filtro". É o que um seletor
+ *    devolvido a "todos" envia, e recusá-lo transformaria limpar o filtro em
+ *    erro de validação;
+ *  - as mensagens são escritas aqui. As padrão do Zod sairiam em inglês
+ *    (`Invalid option: expected one of "PROFESSOR"|"SUPERVISOR"`) e iriam
+ *    direto para a tela de quem abriu um link de filtro antigo.
+ */
 export const listUsersQuerySchema = listQuerySchema
   .omit({ from: true, to: true })
   .extend({
-    role: z.enum(["PROFESSOR", "SUPERVISOR"]).optional(),
+    role: z
+      .union([z.literal(""), z.enum(["PROFESSOR", "SUPERVISOR"])], {
+        error: "Filtro de perfil desconhecido: use PROFESSOR ou SUPERVISOR.",
+      })
+      .optional()
+      .transform((v) => (v ? v : undefined)),
     active: z
-      .union([z.boolean(), z.enum(["true", "false"])])
+      .union([z.boolean(), z.enum(["true", "false"]), z.literal("")], {
+        error:
+          'Filtro de situação inválido: use "true" para contas ativas ou "false" para desativadas.',
+      })
       .optional()
       .transform((v) =>
-        v === undefined ? undefined : v === true || v === "true",
+        v === undefined || v === "" ? undefined : v === true || v === "true",
       ),
   });
 

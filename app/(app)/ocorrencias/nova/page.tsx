@@ -39,14 +39,16 @@ export default async function NovaOcorrenciaPage({
   const reservationId = primeiro(sp.reservationId);
 
   // O alvo mais específico da URL vence: quem vem da tela de um notebook quer
-  // falar do notebook, mesmo que a reserva também tenha sido informada.
+  // falar do notebook, mesmo que a reserva também tenha sido informada. Sem
+  // pista nenhuma, abrimos no notebook — é de longe o problema mais relatado, e
+  // "a reserva inteira" é a exceção, não o padrão.
   const alvoInicial: IncidentTargetType = notebookId
     ? "NOTEBOOK"
     : kitId
       ? "KIT"
       : chargerKitId
         ? "CHARGER_KIT"
-        : "RESERVATION";
+        : "NOTEBOOK";
 
   const [itemInicial, reservas] = await Promise.all([
     resolverItemInicial(user, { notebookId, kitId, chargerKitId }),
@@ -91,13 +93,24 @@ export default async function NovaOcorrenciaPage({
         description="Conte o que aconteceu com o equipamento. A supervisão recebe o registro e acompanha até a solução."
       />
 
-      {!isSupervisor && (
-        <Alert tone="info" className="mb-4">
-          Informe a reserva em que você usou o equipamento. É ela que mostra à
-          supervisão quem estava com o item. Se o problema não tem relação com
-          uma reserva sua, procure a supervisão presencialmente.
-        </Alert>
-      )}
+      {!isSupervisor &&
+        (opcoesReserva.length === 0 ? (
+          <Alert
+            tone="warning"
+            title="Você ainda não tem reservas registradas"
+            className="mb-4"
+          >
+            O registro de problema é vinculado à reserva em que você usou o
+            equipamento. Como não há nenhuma no seu histórico, procure a
+            supervisão para relatar o problema.
+          </Alert>
+        ) : (
+          <Alert tone="info" className="mb-4">
+            Informe a reserva em que você usou o equipamento. É ela que mostra à
+            supervisão quem estava com o item. Se o problema não tem relação com
+            uma reserva sua, procure a supervisão presencialmente.
+          </Alert>
+        ))}
 
       <NovaOcorrenciaForm
         isSupervisor={isSupervisor}
