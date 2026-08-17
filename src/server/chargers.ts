@@ -306,6 +306,13 @@ export async function listChargerKits(
     return { items: [], total: 0, page, pageSize };
   }
 
+  // "Sem vínculo" e "vinculado ao kit X" se excluem. Antes o spread abaixo
+  // deixava `onlyUnlinked` sobrescrever `kitId` em silêncio, e a resposta
+  // parecia legítima enquanto ignorava um filtro que o cliente tinha pedido.
+  if (filters.onlyUnlinked && filters.kitId) {
+    return { items: [], total: 0, page, pageSize };
+  }
+
   const where: Prisma.ChargerKitWhereInput = {
     ...(statusFiltrados.length > 0
       ? { status: { in: statusFiltrados } }

@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { entityHistory } from "@/lib/audit";
 import { handle, json } from "@/lib/http";
-import { getIncident } from "@/server/incidents";
+import { assertCanSeeIncident } from "@/server/incidents";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +10,15 @@ export const dynamic = "force-dynamic";
  *
  * A trilha vem da mesma tabela de auditoria usada pela supervisão — não há uma
  * tabela de histórico por entidade. A permissão é a mesma de ver a ocorrência:
- * `getIncident` responde 404 para quem não pode enxergá-la, e só depois disso
- * consultamos o histórico.
+ * `assertCanSeeIncident` responde 404 para quem não pode enxergá-la, e só
+ * depois disso consultamos o histórico.
  */
 export const GET = handle(
   async (_request: Request, { params }: { params: Promise<{ id: string }> }) => {
     const actor = await requireUser();
     const { id } = await params;
 
-    await getIncident(id, actor);
+    await assertCanSeeIncident(id, actor);
     const registros = await entityHistory("Incident", id);
     const isSupervisor = actor.role === "SUPERVISOR";
 

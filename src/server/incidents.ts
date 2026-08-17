@@ -425,8 +425,21 @@ function toIncidentDTO(incident: IncidentWithRelations): IncidentDTO {
           },
         }
       : null,
-    reportedBy: incident.reportedBy,
-    assignedTo: incident.assignedTo,
+    // Campo a campo, e não a linha crua do banco: se um dia o `select` de
+    // `incidentInclude` ganhar e-mail ou telefone, eles não vazam sozinhos na
+    // resposta sem ninguém ter decidido por isso.
+    reportedBy: {
+      id: incident.reportedBy.id,
+      fullName: incident.reportedBy.fullName,
+      username: incident.reportedBy.username,
+    },
+    assignedTo: incident.assignedTo
+      ? {
+          id: incident.assignedTo.id,
+          fullName: incident.assignedTo.fullName,
+          username: incident.assignedTo.username,
+        }
+      : null,
     attachments: incident.attachments.map(toAttachmentDTO),
   };
 }
@@ -864,9 +877,15 @@ export async function createIncident(
     // indisponibilidade a mais para a supervisão revisar. Em severidade baixa,
     // porém, a decisão é da supervisão.
     if (input.blockResource && actor.role !== "SUPERVISOR" && !sugerirBloqueio) {
+      // Duas causas diferentes levam a `sugerirBloqueio === false`. Dizer
+      // "severidade" para quem escolheu "Crítica" em uma ocorrência de reserva
+      // manda o professor tentar de novo do jeito errado.
       throw regraDeNegocio(
-        "Só é possível bloquear o equipamento em ocorrências de severidade alta ou crítica. " +
-          "Registre a ocorrência e a supervisão avaliará o bloqueio.",
+        BLOCKABLE_TARGETS.includes(input.targetType)
+          ? "Só é possível bloquear o equipamento em ocorrências de severidade alta ou crítica. " +
+              "Registre a ocorrência e a supervisão avaliará o bloqueio."
+          : "Ocorrência de reserva não bloqueia equipamento. Se o problema é em um notebook, " +
+              "maleta/carrinho ou kit de carregadores, registre a ocorrência no próprio equipamento.",
       );
     }
 
@@ -1072,6 +1091,30 @@ export async function getIncident(
   return toIncidentDTO(await loadIncidentOrThrow(id, actor));
 }
 
+/**
+ * Confere só a permissão de leitura, sem montar o DTO.
+ *
+ * Para quem precisa apenas do "pode ver?" — o histórico, por exemplo — carregar
+ * notebook, maleta, kit, reserva, anexos e quem os enviou para jogar tudo fora
+ * em seguida é uma dezena de consultas sem destino. A resposta continua sendo a
+ * mesma de um id inexistente.
+ */
+export async function assertCanSeeIncident(
+  id: string,
+  actor: SessionUser,
+): Promise<void> {
+  const incident = await prisma.incident.findUnique({
+    where: { id },
+    select: {
+      reportedById: true,
+      reservation: { select: { userId: true } },
+    },
+  });
+  if (!incident || !canSeeIncident(incident, actor)) {
+    throw naoEncontrado("Ocorrência não encontrada.");
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Alteração
 // ---------------------------------------------------------------------------
@@ -1108,7 +1151,8 @@ export async function updateIncident(
   if (!isSupervisor) {
     if (camposDeSupervisao.length > 0) {
       throw semPermissao(
-        "Somente a supervisão pode alterar status, responsável, classificação ou solução da ocorrência.",
+        "Somente a supervisão pode alterar status, responsável, classificação ou solução " +
+          "da ocorrência, e bloquear ou liberar o equipamento. Você pode complementar a descrição.",
       );
     }
     if (existing.reportedById !== actor.id) {
@@ -1327,9 +1371,12 @@ export async function addAttachment(
     );
   }
 
+  // Não existe rota de remoção de anexo: mandar "remova um anexo antes de
+  // enviar outro" deixaria o professor procurando um botão que não existe.
   if (incident._count.attachments >= MAX_ATTACHMENTS_PER_INCIDENT) {
     throw regraDeNegocio(
-      `Cada ocorrência aceita no máximo ${MAX_ATTACHMENTS_PER_INCIDENT} anexos. Remova um anexo antes de enviar outro.`,
+      `Cada ocorrência aceita no máximo ${MAX_ATTACHMENTS_PER_INCIDENT} anexos, e esta já chegou ao limite. ` +
+        "Descreva o que falta no texto da ocorrência ou registre uma nova para as demais fotos.",
     );
   }
 

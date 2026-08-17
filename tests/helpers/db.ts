@@ -16,27 +16,30 @@ import type { Role } from "@/generated/prisma/enums";
  * caso que mais importa testar.
  */
 
-/** Limpa todas as tabelas preservando o schema. */
+/**
+ * Limpa todas as tabelas preservando o schema.
+ *
+ * Usa DELETE em ordem de dependência, e não TRUNCATE: o TRUNCATE precisa de
+ * ACCESS EXCLUSIVE em todas as tabelas de uma vez e entra em deadlock com
+ * qualquer conexão do pool que ainda esteja finalizando a transação do teste
+ * anterior. O DELETE pega locks por linha e convive com isso.
+ */
 export async function resetDatabase(): Promise<void> {
-  // TRUNCATE ... CASCADE em uma única instrução é bem mais rápido que apagar
-  // tabela a tabela, e reinicia tudo em estado previsível.
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE
-      whatsapp_contact_logs,
-      incident_attachments,
-      incidents,
-      reservation_items,
-      reservations,
-      audit_logs,
-      login_attempts,
-      sessions,
-      notebooks,
-      charger_kits,
-      kits,
-      system_settings,
-      users
-    RESTART IDENTITY CASCADE
-  `);
+  await prisma.$transaction([
+    prisma.whatsappContactLog.deleteMany(),
+    prisma.incidentAttachment.deleteMany(),
+    prisma.incident.deleteMany(),
+    prisma.reservationItem.deleteMany(),
+    prisma.reservation.deleteMany(),
+    prisma.auditLog.deleteMany(),
+    prisma.loginAttempt.deleteMany(),
+    prisma.session.deleteMany(),
+    prisma.notebook.deleteMany(),
+    prisma.chargerKit.deleteMany(),
+    prisma.kit.deleteMany(),
+    prisma.systemSetting.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
   invalidateSettingsCache();
 }
 

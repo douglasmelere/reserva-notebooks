@@ -173,6 +173,27 @@ export type ReportResult = ReportTable & {
 const JANELA_PADRAO_DIAS = 30;
 
 /**
+ * Limites do dia, recusando data inexistente com mensagem clara.
+ *
+ * O schema de query só garante o formato AAAA-MM-DD — "2026-02-30" passa por
+ * ele e só quebra aqui dentro, com um `Error` cru que viraria um 500
+ * "erro inesperado". Traduzimos para um erro de validação do campo, que é o que
+ * o supervisor precisa ler para corrigir o filtro.
+ */
+export function limitesDoDia(
+  valor: string,
+  campo: "from" | "to",
+): { start: Date; end: Date } {
+  try {
+    return dayBounds(valor);
+  } catch {
+    const rotulo = campo === "from" ? "inicial" : "final";
+    const mensagem = `A data ${rotulo} não existe no calendário. Confira o dia informado.`;
+    throw dadosInvalidos(mensagem, { [campo]: [mensagem] });
+  }
+}
+
+/**
  * Resolve o período do relatório.
  *
  * Sem datas informadas usamos os últimos 30 dias: é a janela que a supervisão
@@ -188,13 +209,14 @@ export function resolvePeriodo(
   const fimStr = to ?? hoje;
 
   if (inicioStr > fimStr) {
-    throw dadosInvalidos("A data inicial deve ser anterior à data final.", {
-      from: ["A data inicial deve ser anterior à data final."],
-    });
+    // O intervalo pode ter um único dia, então o limite é "posterior", não
+    // "anterior ou igual" — a mensagem antiga confundia quem filtrava um dia só.
+    const mensagem = "A data inicial não pode ser posterior à data final.";
+    throw dadosInvalidos(mensagem, { from: [mensagem] });
   }
 
-  const { start } = dayBounds(inicioStr);
-  const { end } = dayBounds(fimStr);
+  const { start } = limitesDoDia(inicioStr, "from");
+  const { end } = limitesDoDia(fimStr, "to");
 
   return {
     from: inicioStr,

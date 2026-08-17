@@ -15,13 +15,32 @@ const reportsQuerySchema = listQuerySchema.extend({
   tipo: z.enum(REPORT_TYPES, {
     message: "Relatório desconhecido.",
   }),
-  formato: z.enum(["json", "csv"]).default("json"),
+  formato: z
+    .enum(["json", "csv"], { message: 'Formato inválido: use "json" ou "csv".' })
+    .default("json"),
   // Filtros extras do histórico de reservas.
-  userId: z.string().trim().min(1).max(64).optional(),
-  kitId: z.string().trim().min(1).max(64).optional(),
-  notebookId: z.string().trim().min(1).max(64).optional(),
+  userId: z
+    .string()
+    .trim()
+    .min(1, "Selecione um professor válido.")
+    .max(64, "Identificador de professor inválido.")
+    .optional(),
+  kitId: z
+    .string()
+    .trim()
+    .min(1, "Selecione uma maleta ou carrinho válido.")
+    .max(64, "Identificador de kit inválido.")
+    .optional(),
+  notebookId: z
+    .string()
+    .trim()
+    .min(1, "Selecione um notebook válido.")
+    .max(64, "Identificador de notebook inválido.")
+    .optional(),
   status: z
-    .union([reservationStatusSchema, z.array(reservationStatusSchema)])
+    .union([reservationStatusSchema, z.array(reservationStatusSchema)], {
+      message: "Situação de reserva desconhecida.",
+    })
     .optional()
     .transform((valor) =>
       valor === undefined ? undefined : Array.isArray(valor) ? valor : [valor],

@@ -18,9 +18,20 @@ export const dynamic = "force-dynamic";
  * compartilhado normaliza texto opcional para `null`, o que apagaria a solução
  * já registrada a cada atualização de status. Aqui a solução volta a ser
  * `undefined` quando não vem no corpo.
+ *
+ * `description` também é redeclarada: no esquema compartilhado ela não tem
+ * mensagens próprias, e o Zod devolveria "Too small: expected string to have
+ * >=5 characters" — texto em inglês, exibido direto ao professor que tentasse
+ * complementar a ocorrência com poucas palavras.
  */
 const patchIncidentSchema = updateIncidentSchema.extend({
   resolution: z.string().trim().max(2000, "Solução muito longa").nullable().optional(),
+  description: z
+    .string()
+    .trim()
+    .min(5, "Descreva o problema com pelo menos 5 caracteres")
+    .max(2000, "A descrição deve ter no máximo 2000 caracteres")
+    .optional(),
 });
 
 export const GET = handle(

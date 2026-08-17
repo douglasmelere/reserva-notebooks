@@ -515,11 +515,20 @@ export async function getKit(
   id: string,
   actor?: SessionUser,
 ): Promise<KitDetail> {
+  // Notebook desativado some da visão do professor em `listNotebooks` e em
+  // `getNotebook`. Sem o mesmo recorte aqui, o detalhe do kit viraria o atalho
+  // para enumerar equipamentos baixados — com número de série e observações
+  // internas — justamente para quem a regra manda esconder.
+  const verDesativados = !actor || actor.role === "SUPERVISOR";
+
   const kit = await prisma.kit.findUnique({
     where: { id },
     include: {
       ...kitInclude,
       notebooks: {
+        ...(verDesativados
+          ? {}
+          : { where: { status: { not: "DESATIVADO" as const } } }),
         select: {
           id: true,
           assetTag: true,
@@ -564,7 +573,10 @@ export async function getKit(
 
   return {
     ...toKitSummary(kit),
-    notebooks: kit.notebooks,
+    notebooks: kit.notebooks.map((notebook) => ({
+      ...notebook,
+      statusLabel: NOTEBOOK_STATUS_LABEL[notebook.status],
+    })),
     reservasFuturas: reservas.map((reserva) => ({
       id: reserva.id,
       code: reserva.code,
@@ -832,6 +844,11 @@ export async function setKitStatus(
   context: MutationContext = {},
   reason?: string | null,
 ): Promise<KitDetail> {
+  // Autoriza antes de ler: `applyKitPatch` só checa o perfil lá no fim, e até
+  // lá a consulta abaixo já teria confirmado a existência do kit para quem não
+  // pode consultá-lo.
+  assertSupervisor(actor);
+
   const kit = await prisma.kit.findUnique({
     where: { id },
     select: { status: true },
@@ -863,6 +880,11 @@ export async function deactivateKit(
   context: MutationContext = {},
   reason?: string | null,
 ): Promise<KitDetail> {
+  // Mesma ordem de `deactivateChargerKit`: sem esta linha a mensagem "o kit X
+  // já está desativado" entregaria o nome do kit antes de qualquer checagem de
+  // perfil, já que `applyKitPatch` só valida depois.
+  assertSupervisor(actor);
+
   const kit = await prisma.kit.findUnique({
     where: { id },
     select: { name: true, code: true, status: true },

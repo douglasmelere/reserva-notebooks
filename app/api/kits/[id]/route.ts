@@ -7,10 +7,10 @@ import {
   requireUser,
 } from "@/lib/auth";
 import { handle, json, readJson, readQuery } from "@/lib/http";
-import { updateKitSchema } from "@/lib/validation";
 import {
   deactivateKit,
   getKit,
+  kitPatchSchema,
   setKitStatus,
   updateKit,
 } from "@/server/kits";
@@ -39,7 +39,9 @@ export const PATCH = handle(
     await assertSameOrigin();
 
     const { id } = await params;
-    const patch = await readJson(request, updateKitSchema);
+    // `kitPatchSchema` (e não `updateKitSchema`) porque só ele trata "status
+    // ausente" como "não mexer no status" — ver o comentário do esquema.
+    const patch = await readJson(request, kitPatchSchema);
     const context = {
       ip: await getClientIp(),
       userAgent: await getUserAgent(),

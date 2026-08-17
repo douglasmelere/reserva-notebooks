@@ -22,7 +22,9 @@ export const dynamic = "force-dynamic";
  *
  * Aceita as duas formas que a interface produz — `?status=ABERTA&status=RECORRENTE`
  * e `?status=ABERTA,RECORRENTE` — porque o mesmo filtro é montado ora por
- * checkboxes, ora por um link salvo pelo usuário.
+ * checkboxes, ora por um link salvo pelo usuário. Um link salvo com um valor
+ * que saiu do vocabulário precisa de um recado em português: a mensagem padrão
+ * do Zod ("Invalid option: expected one of ...") iria direto para a tela.
  */
 const multiplaEscolha = <T extends z.ZodType>(item: T) =>
   z.preprocess((raw) => {
@@ -34,17 +36,30 @@ const multiplaEscolha = <T extends z.ZodType>(item: T) =>
     return valores.length > 0 ? valores : undefined;
   }, z.array(item).optional());
 
-const incidentTargetTypeSchema = z.enum([
-  "NOTEBOOK",
-  "KIT",
-  "CHARGER_KIT",
-  "RESERVATION",
-]);
+// Os enums abaixo repetem o vocabulário do esquema compartilhado através de
+// `.options` — uma única fonte da lista de valores — só para trocar a mensagem
+// padrão do Zod, que sairia em inglês.
+const incidentTargetTypeSchema = z.enum(
+  ["NOTEBOOK", "KIT", "CHARGER_KIT", "RESERVATION"],
+  { error: "Filtro de tipo de item desconhecido." },
+);
 
 const listIncidentsQuerySchema = listQuerySchema.extend({
-  status: multiplaEscolha(incidentStatusSchema),
-  severity: multiplaEscolha(incidentSeveritySchema),
-  category: multiplaEscolha(incidentCategorySchema),
+  status: multiplaEscolha(
+    z.enum(incidentStatusSchema.options, {
+      error: "Filtro de situação desconhecido.",
+    }),
+  ),
+  severity: multiplaEscolha(
+    z.enum(incidentSeveritySchema.options, {
+      error: "Filtro de severidade desconhecido.",
+    }),
+  ),
+  category: multiplaEscolha(
+    z.enum(incidentCategorySchema.options, {
+      error: "Filtro de categoria desconhecido.",
+    }),
+  ),
   targetType: incidentTargetTypeSchema.optional(),
   notebookId: z.string().optional(),
   kitId: z.string().optional(),

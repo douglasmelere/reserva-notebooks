@@ -20,7 +20,7 @@ import {
   BLOCKING_STATUSES,
   RESERVATION_STATUS_LABEL,
 } from "./reservation-policy";
-import { KIT_STATUS_LABEL, NOTEBOOK_STATUS_LABEL } from "./resources";
+import { KIT_STATUS_LABEL } from "./resources";
 import {
   CHARGER_KIT_STATUS_LABEL,
   INCIDENT_SEVERITY_LABEL,
@@ -43,6 +43,16 @@ import {
 const JANELA_PROXIMAS_DIAS = 7;
 /** Janela dos indicadores de utilização dos kits. */
 const JANELA_UTILIZACAO_DIAS = 30;
+/**
+ * Teto da lista de devoluções pendentes.
+ *
+ * Uma reserva que ninguém encerrou continua "atrasada" para sempre: sem teto,
+ * esta consulta cresceria indefinidamente com o passar dos anos e o painel — a
+ * página mais acessada do sistema — carregaria o histórico inteiro a cada
+ * acesso. A lista traz as mais antigas primeiro; o total real vem de um
+ * `count` e continua exato em `indicadores.devolucoesPendentes`.
+ */
+const MAX_ALERTAS_DEVOLUCAO = 100;
 
 // ---------------------------------------------------------------------------
 // Tipos de saída
@@ -133,6 +143,7 @@ export type DashboardResult = {
   hoje: string;
   reservasHoje: ResumoReserva[];
   reservasProximas: ResumoReserva[];
+  /** Limitada a `MAX_ALERTAS_DEVOLUCAO`; o total exato fica nos indicadores. */
   reservasAtrasadas: ResumoReserva[];
   kitsEmUso: KitEmUso[];
   notebooksPorStatus: {
@@ -155,6 +166,7 @@ export type DashboardResult = {
     total: number;
     porSeveridade: ContagemPorSeveridade[];
   };
+  /** Limitada a `MAX_ALERTAS_DEVOLUCAO`; o total exato fica nos indicadores. */
   alertasDevolucaoPendente: AlertaDevolucaoPendente[];
   carregadoresIncompletos: CarregadorIncompleto[];
   utilizacaoKits: {
@@ -306,10 +318,17 @@ export async function getDashboard(): Promise<DashboardResult> {
     agora.getTime() - JANELA_UTILIZACAO_DIAS * 86_400_000,
   );
 
+  // Devoluções pendentes: o período terminou e a reserva ainda ocupa o recurso.
+  const ondeAtrasadas: Prisma.ReservationWhereInput = {
+    status: { in: BLOCKING_STATUSES },
+    endsAt: { lt: agora },
+  };
+
   const [
     reservasHojeRaw,
     reservasProximasRaw,
     reservasAtrasadasRaw,
+    totalDevolucoesPendentes,
     kitsEmUsoRaw,
     gruposNotebook,
     gruposKit,
@@ -333,12 +352,13 @@ export async function getDashboard(): Promise<DashboardResult> {
       include: resumoInclude,
       orderBy: [{ startsAt: "asc" }],
     }),
-    // Devoluções pendentes: o período terminou e a reserva ainda ocupa o recurso.
     prisma.reservation.findMany({
-      where: { status: { in: BLOCKING_STATUSES }, endsAt: { lt: agora } },
+      where: ondeAtrasadas,
       include: resumoInclude,
       orderBy: [{ endsAt: "asc" }],
+      take: MAX_ALERTAS_DEVOLUCAO,
     }),
+    prisma.reservation.count({ where: ondeAtrasadas }),
     prisma.reservationItem.findMany({
       where: {
         type: "KIT",
@@ -653,7 +673,8 @@ export async function getDashboard(): Promise<DashboardResult> {
     indicadores: {
       reservasHoje: reservasHoje.length,
       reservasProximas: reservasProximas.length,
-      devolucoesPendentes: alertasDevolucaoPendente.length,
+      // Contagem real, independente do teto aplicado à lista de alertas.
+      devolucoesPendentes: totalDevolucoesPendentes,
       ocorrenciasAbertas: ocorrenciasAbertasTotal,
       kitsEmUso: kitsEmUso.length,
       carregadoresIncompletos: carregadoresIncompletos.length,
