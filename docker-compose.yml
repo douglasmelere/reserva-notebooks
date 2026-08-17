@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------------
+# Ambiente de DESENVOLVIMENTO local.
+#
+# Em produção o Coolify não usa este arquivo: lá a aplicação e o PostgreSQL são
+# dois recursos separados, ligados pela rede interna. Ver
+# docs/deploy-coolify-hostinger.md.
+#
+#   docker compose up -d db          # só o banco, app rodando via `npm run dev`
+#   docker compose --profile app up  # aplicação containerizada (testa o Dockerfile)
+# ---------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: reserva-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-reserva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
+      POSTGRES_DB: ${POSTGRES_DB:-reserva_dev}
+    ports:
+      # Porta alta no host para não colidir com um PostgreSQL já instalado.
+      - "${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reserva} -d ${POSTGRES_DB:-reserva_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    # Só sobe com `--profile app`; no dia a dia o servidor de desenvolvimento
+    # roda fora do container, com recarga automática.
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reserva-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-reserva}:${POSTGRES_PASSWORD:-devpass}@db:5432/${POSTGRES_DB:-reserva_dev}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SESSION_SECRET: ${SESSION_SECRET:?defina SESSION_SECRET no .env — gere com: openssl rand -hex 32}
+      INSTITUTION_TIMEZONE: ${INSTITUTION_TIMEZONE:-America/Sao_Paulo}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_PATH: /data/uploads
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # Anexos das ocorrências: sem este volume, os arquivos somem a cada
+      # recriação do container.
+      - uploads:/data/uploads
+
+volumes:
+  db-data:
+  uploads:

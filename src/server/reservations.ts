@@ -225,7 +225,10 @@ async function lockResources(
 ): Promise<void> {
   for (const key of [...resourceKeys].sort()) {
     const lockId = advisoryLockKey(key).toString();
-    await client.$queryRaw`SELECT pg_advisory_xact_lock(${lockId}::bigint)`;
+    // `pg_advisory_xact_lock` devolve `void`, tipo que o Prisma não sabe
+    // desserializar em `$queryRaw`. Chamá-la no FROM e projetar um literal
+    // adquire o lock do mesmo jeito e devolve uma coluna que o client entende.
+    await client.$queryRaw`SELECT 1 AS travado FROM pg_advisory_xact_lock(${lockId}::bigint)`;
   }
 }
 
