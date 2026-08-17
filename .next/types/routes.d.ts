@@ -22,13 +22,47 @@ declare global {
 declare namespace VinextRouteTypes {
   type PageRoute = "/";
   type LayoutRoute = "/";
-  type RouteHandlerRoute = "/api/health" | "/api/probe-toolchain";
-  type AppRoute = "/" | "/api/health" | "/api/probe-toolchain";
+  type RouteHandlerRoute = "/api/admin/audit-logs" | "/api/admin/dashboard" | "/api/admin/reports" | "/api/admin/settings" | "/api/admin/users" | "/api/admin/users/[id]" | "/api/admin/users/[id]/history" | "/api/admin/users/[id]/reset-password" | "/api/attachments/[id]" | "/api/auth/login" | "/api/auth/logout" | "/api/auth/register" | "/api/availability" | "/api/charger-kits" | "/api/charger-kits/[id]" | "/api/health" | "/api/incidents" | "/api/incidents/[id]" | "/api/incidents/[id]/attachments" | "/api/incidents/[id]/history" | "/api/kits" | "/api/kits/[id]" | "/api/kits/[id]/history" | "/api/me" | "/api/me/password" | "/api/notebooks" | "/api/notebooks/[id]" | "/api/notebooks/[id]/history" | "/api/notebooks/bulk" | "/api/reservations" | "/api/reservations/[id]" | "/api/reservations/[id]/cancel" | "/api/reservations/[id]/close" | "/api/reservations/[id]/history" | "/api/reservations/[id]/whatsapp" | "/api/search";
+  type AppRoute = "/" | "/api/admin/audit-logs" | "/api/admin/dashboard" | "/api/admin/reports" | "/api/admin/settings" | "/api/admin/users" | "/api/admin/users/[id]" | "/api/admin/users/[id]/history" | "/api/admin/users/[id]/reset-password" | "/api/attachments/[id]" | "/api/auth/login" | "/api/auth/logout" | "/api/auth/register" | "/api/availability" | "/api/charger-kits" | "/api/charger-kits/[id]" | "/api/health" | "/api/incidents" | "/api/incidents/[id]" | "/api/incidents/[id]/attachments" | "/api/incidents/[id]/history" | "/api/kits" | "/api/kits/[id]" | "/api/kits/[id]/history" | "/api/me" | "/api/me/password" | "/api/notebooks" | "/api/notebooks/[id]" | "/api/notebooks/[id]/history" | "/api/notebooks/bulk" | "/api/reservations" | "/api/reservations/[id]" | "/api/reservations/[id]/cancel" | "/api/reservations/[id]/close" | "/api/reservations/[id]/history" | "/api/reservations/[id]/whatsapp" | "/api/search";
 
   interface ParamMap {
     "/": {};
+    "/api/admin/audit-logs": {};
+    "/api/admin/dashboard": {};
+    "/api/admin/reports": {};
+    "/api/admin/settings": {};
+    "/api/admin/users": {};
+    "/api/admin/users/[id]": { id: string; };
+    "/api/admin/users/[id]/history": { id: string; };
+    "/api/admin/users/[id]/reset-password": { id: string; };
+    "/api/attachments/[id]": { id: string; };
+    "/api/auth/login": {};
+    "/api/auth/logout": {};
+    "/api/auth/register": {};
+    "/api/availability": {};
+    "/api/charger-kits": {};
+    "/api/charger-kits/[id]": { id: string; };
     "/api/health": {};
-    "/api/probe-toolchain": {};
+    "/api/incidents": {};
+    "/api/incidents/[id]": { id: string; };
+    "/api/incidents/[id]/attachments": { id: string; };
+    "/api/incidents/[id]/history": { id: string; };
+    "/api/kits": {};
+    "/api/kits/[id]": { id: string; };
+    "/api/kits/[id]/history": { id: string; };
+    "/api/me": {};
+    "/api/me/password": {};
+    "/api/notebooks": {};
+    "/api/notebooks/[id]": { id: string; };
+    "/api/notebooks/[id]/history": { id: string; };
+    "/api/notebooks/bulk": {};
+    "/api/reservations": {};
+    "/api/reservations/[id]": { id: string; };
+    "/api/reservations/[id]/cancel": { id: string; };
+    "/api/reservations/[id]/close": { id: string; };
+    "/api/reservations/[id]/history": { id: string; };
+    "/api/reservations/[id]/whatsapp": { id: string; };
+    "/api/search": {};
   }
 
   interface LayoutSlotMap {

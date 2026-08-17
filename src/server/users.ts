@@ -549,9 +549,11 @@ export async function updateProfile(
     ...(patch.department !== undefined ? { department: patch.department } : {}),
   };
 
-  // Retirar o consentimento de WhatsApp precisa ter efeito real: sem apagar o
-  // número, ele continuaria armazenado sem base para uso.
-  if (patch.whatsappOptIn === false) data.phone = null;
+  // Retirar o consentimento não apaga o telefone: o número é o contato
+  // institucional do docente (a supervisão liga por causa de equipamento não
+  // devolvido), enquanto `whatsappOptIn` governa apenas a exposição do número
+  // a colegas — trava que `buildWhatsappLink` aplica na hora de gerar o link.
+  // Quem quiser remover o número envia `phone: null` explicitamente.
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -876,7 +878,6 @@ export async function adminUpdateUser(
     ...(patch.role !== undefined ? { role: patch.role } : {}),
     ...(patch.active !== undefined ? { active: patch.active } : {}),
   };
-  if (patch.whatsappOptIn === false) data.phone = null;
 
   let updated: UserDetail;
   try {

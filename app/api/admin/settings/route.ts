@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { auditSafe, diffChanges } from "@/lib/audit";
 import {
   assertSameOrigin,
@@ -6,7 +7,7 @@ import {
   requireSupervisor,
 } from "@/lib/auth";
 import { dadosInvalidos } from "@/lib/errors";
-import { handle, json, readJson } from "@/lib/http";
+import { fromZodError, handle, json, readJson } from "@/lib/http";
 import {
   defaultSettings,
   getSettings,
@@ -33,18 +34,35 @@ export const GET = handle(async () => {
   });
 }, "admin.settings");
 
+const partialSettingsSchema = settingsSchema.partial();
+
+/** Chaves reconhecidas; qualquer outra coisa no corpo é simplesmente ignorada. */
+const CHAVES_CONHECIDAS = new Set(Object.keys(settingsSchema.shape));
+
 /**
  * Atualização parcial.
  *
- * `settingsSchema.partial()` aceita apenas as chaves conhecidas e aplica as
- * mesmas validações da gravação completa — enviar `maxAdvanceDays: 9999` é
- * recusado aqui, não no banco.
+ * Armadilha do Zod: `settingsSchema.partial()` valida cada campo isoladamente,
+ * mas os `.default()` do schema continuam disparando — o resultado do parse vem
+ * com TODAS as chaves preenchidas. Aplicá-lo direto restauraria os padrões de
+ * fábrica em tudo que o formulário não enviou. Por isso lemos o corpo bruto
+ * para saber quais chaves o cliente realmente mandou e recortamos o patch a
+ * partir delas; a validação de valores continua sendo a do schema.
  */
 export const PATCH = handle(async (request: Request) => {
   const supervisor = await requireSupervisor();
   await assertSameOrigin();
 
-  const patch = await readJson(request, settingsSchema.partial());
+  const corpo = await readJson(request, z.record(z.string(), z.unknown()));
+
+  const validado = partialSettingsSchema.safeParse(corpo);
+  if (!validado.success) throw fromZodError(validado.error);
+
+  const patch = Object.fromEntries(
+    Object.entries(validado.data).filter(
+      ([chave]) => CHAVES_CONHECIDAS.has(chave) && chave in corpo,
+    ),
+  ) as Partial<Settings>;
 
   if (Object.keys(patch).length === 0) {
     throw dadosInvalidos("Informe ao menos uma configuração para alterar.");

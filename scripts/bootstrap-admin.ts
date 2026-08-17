@@ -21,11 +21,20 @@ try {
   // Sem arquivo `.env`: as variáveis já devem vir do ambiente (Docker/Coolify).
 }
 
-import { audit } from "@/lib/audit";
-import { prisma } from "@/lib/db";
-import { getEnv } from "@/lib/env";
-import { hashPassword } from "@/lib/password";
-import { usernameSchema } from "@/lib/validation";
+/**
+ * Importação dinâmica, e não `import` estático, por causa da ordem de avaliação
+ * do ESM: os `import` são resolvidos antes de qualquer instrução do módulo, e
+ * `@/lib/db` lê `DATABASE_URL` já na avaliação. Com `import` estático o cliente
+ * Prisma seria construído antes de o `.env` ter sido carregado acima.
+ */
+const [{ audit }, { prisma }, { getEnv }, { hashPassword }, { usernameSchema }] =
+  await Promise.all([
+    import("@/lib/audit"),
+    import("@/lib/db"),
+    import("@/lib/env"),
+    import("@/lib/password"),
+    import("@/lib/validation"),
+  ]);
 
 /** Mínimo exigido para a conta mais poderosa do sistema. */
 const MIN_PASSWORD_LENGTH = 12;

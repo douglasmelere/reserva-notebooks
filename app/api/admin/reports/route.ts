@@ -34,7 +34,9 @@ const reportsQuerySchema = listQuerySchema.extend({
  * Sem ele o Excel em pt-BR abre o arquivo como Windows-1252 e todo acento vira
  * caractere estranho — o relatório chega ilegível para quem vai usá-lo.
  */
-const BOM_UTF8 = "﻿";
+// Escrito como escape de propósito: um U+FEFF literal é invisível no editor e
+// some no primeiro "trim" distraído.
+const BOM_UTF8 = "\uFEFF";
 
 export const GET = handle(async (request: Request) => {
   await requireSupervisor();

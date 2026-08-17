@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { entityHistory } from "@/lib/audit";
 import { requireSupervisor } from "@/lib/auth";
+import { formatDateTimeBR } from "@/lib/datetime";
 import { naoEncontrado } from "@/lib/errors";
 import { handle, json, readQuery } from "@/lib/http";
 import { prisma } from "@/lib/db";
@@ -15,8 +16,9 @@ const historyQuerySchema = z.object({
  * Histórico de alterações do notebook.
  *
  * Lido da trilha de auditoria — não há tabela de histórico própria. Restrito à
- * supervisão: o histórico expõe quem alterou o quê e observações internas, que
- * não fazem parte do que o professor precisa para reservar.
+ * supervisão: o histórico expõe quem alterou o quê, o IP e o agente de quem
+ * alterou, além de observações internas, que não fazem parte do que o
+ * professor precisa para reservar.
  */
 export const GET = handle(
   async (request: Request, context: { params: Promise<{ id: string }> }) => {
@@ -32,9 +34,34 @@ export const GET = handle(
     if (!notebook) throw naoEncontrado("Notebook não encontrado.");
 
     const { limit } = readQuery(request, historyQuerySchema);
-    const eventos = await entityHistory("Notebook", id, limit);
+    const registros = await entityHistory("Notebook", id, limit);
 
-    return json({ notebook, eventos, total: eventos.length });
+    return json({
+      notebook,
+      total: registros.length,
+      // Campo a campo, como nas demais rotas de histórico: devolver a linha
+      // crua do banco faria qualquer coluna futura da auditoria vazar sozinha
+      // na resposta, sem ninguém decidir por isso.
+      historico: registros.map((registro) => ({
+        id: registro.id,
+        action: registro.action,
+        summary: registro.summary,
+        before: registro.before,
+        after: registro.after,
+        createdAt: registro.createdAt.toISOString(),
+        createdAtFormatado: formatDateTimeBR(registro.createdAt),
+        // Ator ausente = conta removida depois do evento (`onDelete: SetNull`).
+        actor: registro.actor
+          ? {
+              id: registro.actor.id,
+              fullName: registro.actor.fullName,
+              username: registro.actor.username,
+            }
+          : null,
+        ip: registro.ip,
+        userAgent: registro.userAgent,
+      })),
+    });
   },
   "notebooks.historico",
 );

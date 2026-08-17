@@ -14,7 +14,8 @@ process.env.ARGON2_MEMORY_COST ??= "8192";
 process.env.ARGON2_TIME_COST ??= "1";
 process.env.ARGON2_PARALLELISM ??= "1";
 
-process.env.NODE_ENV ??= "test";
+// `NODE_ENV` é somente-leitura nos tipos do Node; a atribuição em si é válida.
+if (!process.env.NODE_ENV) Reflect.set(process.env, "NODE_ENV", "test");
 process.env.SESSION_SECRET ??=
   "segredo-de-teste-com-mais-de-32-caracteres-000000";
 process.env.APP_URL ??= "http://localhost:3000";

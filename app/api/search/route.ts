@@ -252,8 +252,10 @@ export const GET = handle(async (request: Request) => {
         href: `/admin/usuarios/${professor.id}`,
       })),
     },
-    // Grupo vazio só ocuparia espaço na lista de sugestões.
-  ].filter((grupo) => grupo.itens.length > 0);
+  ];
+
+  // Grupo vazio só ocuparia espaço na lista de sugestões.
+  const grupos = todosGrupos.filter((grupo) => grupo.itens.length > 0);
 
   return json({
     termo: q,

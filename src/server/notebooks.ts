@@ -170,6 +170,10 @@ export type NotebookIncidentSummary = {
 };
 
 export type NotebookDetail = NotebookListItem & {
+  /**
+   * Recortado pelo perfil de quem consulta: a supervisão vê todas, o professor
+   * só as que registrou ou as ligadas a uma reserva dele.
+   */
   ocorrenciasRecentes: NotebookIncidentSummary[];
   reservasAtivas: NotebookReservationSummary[];
   /** Reservas do kit que contém o notebook — ele vai junto na maleta. */
@@ -417,11 +421,24 @@ export async function getNotebook(
   id: string,
   actor?: SessionUser,
 ): Promise<NotebookDetail> {
+  // Quem pode ver uma ocorrência é decisão do domínio de ocorrências
+  // (`canSeeIncident`): o professor enxerga o que ele mesmo registrou e o que
+  // está preso a uma reserva dele — nada além. O detalhe do notebook não pode
+  // virar um atalho para ler a descrição de ocorrências alheias, então o mesmo
+  // recorte é aplicado aqui, na consulta, e não depois de trazer as linhas.
+  const ocorrenciasVisiveis: Prisma.IncidentWhereInput | undefined =
+    actor && actor.role !== "SUPERVISOR"
+      ? {
+          OR: [{ reportedById: actor.id }, { reservation: { userId: actor.id } }],
+        }
+      : undefined;
+
   const record = await prisma.notebook.findUnique({
     where: { id },
     include: {
       ...notebookInclude,
       incidents: {
+        ...(ocorrenciasVisiveis ? { where: ocorrenciasVisiveis } : {}),
         orderBy: { createdAt: "desc" },
         take: 10,
         select: {

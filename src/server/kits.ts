@@ -13,14 +13,24 @@ import {
   kitStatusSchema,
   kitTypeSchema,
   paginationSchema,
+  updateKitSchema,
 } from "@/lib/validation";
 import type { Prisma } from "@/generated/prisma/client";
 import type {
+  ChargerKitStatus,
   KitStatus,
   KitType,
+  NotebookStatus,
   ReservationStatus,
 } from "@/generated/prisma/enums";
-import { KIT_STATUS_LABEL, kitIsReservable } from "./resources";
+import {
+  KIT_STATUS_LABEL,
+  NOTEBOOK_STATUS_LABEL,
+  kitIsReservable,
+} from "./resources";
+// Só o rótulo: `chargers.ts` importa daqui apenas `MutationContext`, e como é
+// `import type` ele some na compilação — não há ciclo em tempo de execução.
+import { CHARGER_KIT_STATUS_LABEL } from "./chargers";
 import {
   BLOCKING_STATUSES,
   RESERVATION_STATUS_LABEL,
@@ -89,7 +99,7 @@ export type KitFilters = {
 export type ChargerKitSummary = {
   id: string;
   code: string;
-  status: string;
+  status: ChargerKitStatus;
   statusLabel: string;
   totalQuantity: number;
   availableQuantity: number;
@@ -108,6 +118,7 @@ export type KitSummary = {
   notes: string | null;
   status: KitStatus;
   statusLabel: string;
+  /** Notebooks ativos vinculados. Desativados não ocupam vaga (ver capacidade). */
   notebookCount: number;
   /** Vagas ainda livres na capacidade planejada. Nunca negativo. */
   vagasRestantes: number;
@@ -127,7 +138,9 @@ export type KitNotebookSummary = {
   nickname: string | null;
   brand: string | null;
   model: string | null;
-  status: string;
+  status: NotebookStatus;
+  /** Rótulo em português: a tela nunca deve exibir o enum cru. */
+  statusLabel: string;
   notes: string | null;
 };
 
@@ -147,6 +160,10 @@ export type KitUpcomingReservation = {
 };
 
 export type KitDetail = KitSummary & {
+  /**
+   * Notebooks vinculados. A supervisão vê também os desativados (o vínculo é
+   * histórico); para o professor eles são omitidos, como na listagem.
+   */
   notebooks: KitNotebookSummary[];
   reservasFuturas: KitUpcomingReservation[];
 };
@@ -208,6 +225,25 @@ export const kitStatusPatchSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
 
+/**
+ * Corpo aceito na alteração parcial do kit.
+ *
+ * `updateKitSchema` nasce de `createKitSchema.partial()`, e o `.partial()` do
+ * Zod **não** remove o `.default("DISPONIVEL")` do campo `status`: um PATCH que
+ * só renomeia o kit chega ao serviço com `status: "DISPONIVEL"` embutido e
+ * devolve à disponibilidade — silenciosamente, e com um registro de auditoria
+ * enganoso — um kit que a supervisão tinha posto em manutenção ou desativado.
+ * Um corpo vazio reativaria um kit desativado sem que ninguém pedisse.
+ *
+ * Redeclarar o campo como opcional puro faz "não enviado" significar "não mexa
+ * no status", que é a única leitura correta em um PATCH.
+ */
+export const kitPatchSchema = updateKitSchema.extend({
+  status: kitStatusSchema.optional(),
+});
+
+export type KitPatchInput = z.infer<typeof kitPatchSchema>;
+
 // ---------------------------------------------------------------------------
 // Formas de consulta
 // ---------------------------------------------------------------------------
@@ -222,18 +258,15 @@ const chargerKitSelect = {
 
 const kitInclude = {
   chargerKit: { select: chargerKitSelect },
-  _count: { select: { notebooks: true } },
+  // Contagem filtrada: precisa bater exatamente com a regra de capacidade
+  // (`countActiveNotebooks`), senão a tela mostraria "3 de 2 ocupados" para um
+  // kit que o serviço considera dentro do limite.
+  _count: {
+    select: { notebooks: { where: { status: { not: "DESATIVADO" } } } },
+  },
 } satisfies Prisma.KitInclude;
 
 type KitRow = Prisma.KitGetPayload<{ include: typeof kitInclude }>;
-
-const CHARGER_KIT_STATUS_LABEL: Record<string, string> = {
-  COMPLETO: "Completo",
-  INCOMPLETO: "Incompleto",
-  MANUTENCAO: "Em manutenção",
-  INDISPONIVEL: "Indisponível",
-  DESATIVADO: "Desativado",
-};
 
 function toChargerKitSummary(
   charger: KitRow["chargerKit"],
@@ -243,7 +276,9 @@ function toChargerKitSummary(
     id: charger.id,
     code: charger.code,
     status: charger.status,
-    statusLabel: CHARGER_KIT_STATUS_LABEL[charger.status] ?? charger.status,
+    // Rótulo vem de `chargers.ts`: uma cópia local aqui sairia do lugar assim
+    // que um status novo fosse criado, e a tela mostraria o enum cru.
+    statusLabel: CHARGER_KIT_STATUS_LABEL[charger.status],
     totalQuantity: charger.totalQuantity,
     availableQuantity: charger.availableQuantity,
     faltando: Math.max(0, charger.totalQuantity - charger.availableQuantity),
