@@ -128,7 +128,7 @@ export function FormNovoUsuario() {
       <div
         ref={painelSucesso}
         tabIndex={-1}
-        className="flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700"
+        className="flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-senai-700"
       >
         <Alert tone="success" title={`Conta criada para ${sucesso.fullName}`}>
           <p>{sucesso.mensagem}</p>
@@ -140,7 +140,7 @@ export function FormNovoUsuario() {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/admin/usuarios/${sucesso.id}`}
-            className="inline-flex min-h-11 items-center rounded-lg bg-sky-700 px-4 text-sm font-medium text-white hover:bg-sky-800"
+            className="inline-flex min-h-11 items-center rounded-lg bg-senai-700 px-4 text-sm font-medium text-white hover:bg-senai-800"
           >
             Abrir a ficha de {sucesso.fullName}
           </Link>

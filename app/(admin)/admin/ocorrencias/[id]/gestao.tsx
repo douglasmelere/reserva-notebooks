@@ -294,7 +294,7 @@ export function GestaoOcorrencia({
                 Também é possível ajustar o status pelo cadastro em{" "}
                 <Link
                   href={telaInventario.href}
-                  className="font-medium text-sky-800 underline"
+                  className="font-medium text-senai-800 underline"
                 >
                   {telaInventario.nome}
                 </Link>

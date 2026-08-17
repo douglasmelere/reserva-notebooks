@@ -1,3 +1,4 @@
+import { Wrench } from "lucide-react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { formatDateTimeBR } from "@/lib/datetime";
@@ -39,7 +40,7 @@ const TOM_SEVERIDADE: Record<IncidentSeverity, BadgeTone> = {
 };
 
 const BOTAO_PRIMARIO =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-senai-700 px-4 text-sm font-medium text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700";
 
 const BOTAO_SECUNDARIO =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
@@ -78,7 +79,7 @@ export default async function MinhasOcorrenciasPage({
         description="Ocorrências que você registrou nos equipamentos e o que a supervisão já respondeu."
         action={
           <Link href="/ocorrencias/nova" className={BOTAO_PRIMARIO}>
-            <span aria-hidden="true">🛠️</span>
+            <Wrench aria-hidden="true" className="size-4" />
             Registrar problema
           </Link>
         }

@@ -138,7 +138,7 @@ export default async function MinhasReservasPage({
             href="/reservar"
             className={cn(
               CLASSE_LINK_BOTAO,
-              "bg-sky-700 text-white hover:bg-sky-800 focus-visible:outline-sky-700",
+              "bg-senai-700 text-white hover:bg-senai-800 focus-visible:outline-senai-700",
             )}
           >
             Fazer uma reserva
@@ -171,7 +171,7 @@ export default async function MinhasReservasPage({
               href="/reservar"
               className={cn(
                 CLASSE_LINK_BOTAO,
-                "bg-sky-700 text-white hover:bg-sky-800 focus-visible:outline-sky-700",
+                "bg-senai-700 text-white hover:bg-senai-800 focus-visible:outline-senai-700",
               )}
             >
               Fazer uma reserva

@@ -158,7 +158,7 @@ export function RegisterForm() {
         </Alert>
         <Link
           href="/entrar"
-          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-5 text-sm font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-senai-700 px-5 text-sm font-medium text-white hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
         >
           Ir para a tela de entrada
         </Link>

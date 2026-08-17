@@ -343,7 +343,7 @@ export default async function KitDetalhePage({
                       </div>
                       <Link
                         href={`/admin/notebooks/${notebook.id}`}
-                        className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                        className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                       >
                         Abrir equipamento
                       </Link>
@@ -387,7 +387,7 @@ export default async function KitDetalhePage({
                           <Td>
                             <Link
                               href={`/admin/notebooks/${notebook.id}`}
-                              className="inline-flex min-h-11 items-center font-medium text-sky-800 underline underline-offset-2"
+                              className="inline-flex min-h-11 items-center font-medium text-senai-800 underline underline-offset-2"
                             >
                               Abrir
                               <span className="sr-only">
@@ -444,7 +444,7 @@ export default async function KitDetalhePage({
                       </Badge>
                       <Link
                         href={`/admin/reservas/${reserva.id}`}
-                        className="inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                        className="inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                       >
                         Ver reserva {reserva.code}
                       </Link>

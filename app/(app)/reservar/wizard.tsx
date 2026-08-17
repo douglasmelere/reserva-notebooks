@@ -585,7 +585,7 @@ export function AssistenteDeReserva({ config }: { config: ConfigReserva }) {
           <h2
             ref={tituloRef}
             tabIndex={-1}
-            className="text-lg font-semibold text-slate-900 focus:outline-2 focus:outline-offset-4 focus:outline-sky-600"
+            className="text-lg font-semibold text-slate-900 focus:outline-2 focus:outline-offset-4 focus:outline-senai-600"
           >
             {etapa < 8 && (
               <span className="text-slate-500">{etapa}. </span>
@@ -946,7 +946,7 @@ function EtapaTipo({
                 ? "cursor-not-allowed border-slate-200 bg-slate-50"
                 : "cursor-pointer",
               marcada && !opcao.desabilitada
-                ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
+                ? "border-senai-600 bg-senai-50 ring-1 ring-senai-600"
                 : !opcao.desabilitada && "border-slate-300 hover:border-slate-400",
             )}
           >
@@ -957,7 +957,7 @@ function EtapaTipo({
               checked={marcada}
               disabled={opcao.desabilitada}
               onChange={() => onChange(opcao.valor)}
-              className="mt-0.5 size-5 shrink-0 border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+              className="mt-0.5 size-5 shrink-0 border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
             />
             <span className="min-w-0">
               <span
@@ -1219,7 +1219,7 @@ function CartaoKit({
           ? "cursor-not-allowed border-slate-200 bg-slate-50"
           : "cursor-pointer",
         selecionado
-          ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
+          ? "border-senai-600 bg-senai-50 ring-1 ring-senai-600"
           : !bloqueadoPorLimite && "border-slate-300 hover:border-slate-400",
       )}
     >
@@ -1228,7 +1228,7 @@ function CartaoKit({
         checked={selecionado}
         disabled={bloqueadoPorLimite}
         onChange={onAlternar}
-        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
       />
       <span className="min-w-0 flex-1 break-words">
         <span className="flex flex-wrap items-center gap-2">
@@ -1279,7 +1279,7 @@ function CartaoNotebook({
           ? "cursor-not-allowed border-slate-200 bg-slate-50"
           : "cursor-pointer",
         selecionado
-          ? "border-sky-600 bg-sky-50 ring-1 ring-sky-600"
+          ? "border-senai-600 bg-senai-50 ring-1 ring-senai-600"
           : !bloqueadoPorLimite && "border-slate-300 hover:border-slate-400",
       )}
     >
@@ -1288,7 +1288,7 @@ function CartaoNotebook({
         checked={selecionado}
         disabled={bloqueadoPorLimite}
         onChange={onAlternar}
-        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
       />
       <span className="min-w-0 flex-1 break-words">
         <span className="flex flex-wrap items-center gap-2">
@@ -1435,7 +1435,7 @@ function BotaoWhatsapp({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-sky-800 underline"
+            className="font-semibold text-senai-800 underline"
           >
             Abrir a conversa no WhatsApp
           </a>{" "}
@@ -1881,7 +1881,7 @@ function EtapaComprovante({
           href="/minhas-reservas"
           className={cn(
             CLASSE_LINK_BOTAO,
-            "bg-sky-700 text-white hover:bg-sky-800 focus-visible:outline-sky-700",
+            "bg-senai-700 text-white hover:bg-senai-800 focus-visible:outline-senai-700",
           )}
         >
           Ver minhas reservas

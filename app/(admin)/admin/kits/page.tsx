@@ -47,7 +47,7 @@ const TOM_DO_STATUS: Record<KitStatus, BadgeTone> = {
 };
 
 const BOTAO_PRIMARIO =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-senai-700 px-4 text-sm font-medium text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700";
 const BOTAO_SECUNDARIO =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
 
@@ -353,7 +353,7 @@ export default async function KitsPage({
                         <Td>
                           <Link
                             href={`/admin/kits/${kit.id}`}
-                            className="inline-flex min-h-11 items-center font-medium text-sky-800 underline underline-offset-2 hover:text-sky-900"
+                            className="inline-flex min-h-11 items-center font-medium text-senai-800 underline underline-offset-2 hover:text-senai-900"
                           >
                             Abrir
                             <span className="sr-only"> o kit {kit.name}</span>

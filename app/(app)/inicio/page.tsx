@@ -1,3 +1,4 @@
+import { CalendarPlus, CalendarSearch } from "lucide-react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import {
@@ -169,14 +170,15 @@ export default async function InicioPage() {
       <nav aria-label="Ações principais" className="grid gap-3 sm:grid-cols-2">
         <Link
           href="/reservar"
-          className="flex min-h-24 items-center gap-4 rounded-xl bg-sky-700 px-5 py-4 text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+          className="flex min-h-24 items-center gap-4 rounded-xl bg-senai-700 px-5 py-4 text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
         >
-          <span aria-hidden="true" className="text-3xl">
-            ➕
-          </span>
+          <CalendarPlus
+            aria-hidden="true"
+            className="size-7 shrink-0 text-senai-700"
+          />
           <span>
             <span className="block text-lg font-semibold">Fazer reserva</span>
-            <span className="block text-sm text-sky-100">
+            <span className="block text-sm text-senai-100">
               Escolha a data, o horário e o equipamento
             </span>
           </span>
@@ -186,9 +188,10 @@ export default async function InicioPage() {
           href="/disponibilidade"
           className="flex min-h-24 items-center gap-4 rounded-xl border border-slate-300 bg-white px-5 py-4 text-slate-900 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
         >
-          <span aria-hidden="true" className="text-3xl">
-            📅
-          </span>
+          <CalendarSearch
+            aria-hidden="true"
+            className="size-7 shrink-0 text-senai-700"
+          />
           <span>
             <span className="block text-lg font-semibold">
               Ver disponibilidade
@@ -268,9 +271,9 @@ export default async function InicioPage() {
                   // seria aninhamento inválido e confunde o leitor de tela.
                   <Link
                     href="/reservar"
-                    className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-sky-700 px-6 text-base font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+                    className="inline-flex min-h-12 items-center gap-2 rounded-lg bg-senai-700 px-6 text-base font-medium text-white hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
                   >
-                    <span aria-hidden="true">➕</span>
+                    <CalendarPlus aria-hidden="true" className="size-4" />
                     Fazer minha primeira reserva
                   </Link>
                 }
@@ -284,7 +287,7 @@ export default async function InicioPage() {
                     <li key={reserva.id}>
                       <Link
                         href={`/minhas-reservas/${reserva.id}`}
-                        className="block rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+                        className="block rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="font-semibold text-slate-900">
@@ -323,7 +326,7 @@ export default async function InicioPage() {
                     ativas.{" "}
                     <Link
                       href="/minhas-reservas"
-                      className="font-medium text-sky-700 underline"
+                      className="font-medium text-senai-700 underline"
                     >
                       Ver todas as suas reservas
                     </Link>

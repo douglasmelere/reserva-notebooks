@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -76,7 +77,7 @@ export function IndicadorDeEtapas({
         className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200"
       >
         <div
-          className="h-full rounded-full bg-sky-700 transition-[width]"
+          className="h-full rounded-full bg-senai-700 transition-[width]"
           style={{ width: `${percentual}%` }}
         />
       </div>
@@ -98,16 +99,20 @@ export function IndicadorDeEtapas({
                 aria-current={ativa ? "step" : undefined}
                 className={cn(
                   "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700",
-                  ativa && "bg-sky-700 text-white",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700",
+                  ativa && "bg-senai-700 text-white",
                   !ativa && concluida && "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200",
                   !ativa && !concluida && "bg-slate-100 text-slate-500",
                   acessivel ? "cursor-pointer hover:brightness-95" : "cursor-default",
                 )}
               >
-                <span aria-hidden="true" className="font-bold">
-                  {concluida ? "✓" : item.numero}
-                </span>
+                {concluida ? (
+                  <Check aria-hidden="true" className="size-4" />
+                ) : (
+                  <span aria-hidden="true" className="font-bold">
+                    {item.numero}
+                  </span>
+                )}
                 <span>{item.titulo}</span>
                 {concluida && <span className="sr-only">(concluída)</span>}
               </button>

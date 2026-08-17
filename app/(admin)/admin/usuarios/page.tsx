@@ -85,7 +85,7 @@ export default async function UsuariosPage({
         action={
           <Link
             href="/admin/usuarios/novo"
-            className="inline-flex min-h-11 items-center rounded-lg bg-sky-700 px-4 text-sm font-medium text-white hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+            className="inline-flex min-h-11 items-center rounded-lg bg-senai-700 px-4 text-sm font-medium text-white hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
           >
             Cadastrar usuário
           </Link>
@@ -148,7 +148,7 @@ export default async function UsuariosPage({
                 ) : (
                   <Link
                     href="/admin/usuarios/novo"
-                    className="inline-flex min-h-11 items-center rounded-lg bg-sky-700 px-4 text-sm font-medium text-white hover:bg-sky-800"
+                    className="inline-flex min-h-11 items-center rounded-lg bg-senai-700 px-4 text-sm font-medium text-white hover:bg-senai-800"
                   >
                     Cadastrar usuário
                   </Link>
@@ -189,7 +189,7 @@ export default async function UsuariosPage({
                         <Td>
                           <Link
                             href={`/admin/usuarios/${usuario.id}`}
-                            className="font-medium text-sky-800 underline underline-offset-2"
+                            className="font-medium text-senai-800 underline underline-offset-2"
                           >
                             {usuario.fullName}
                           </Link>
@@ -263,7 +263,7 @@ function CartaoUsuario({ usuario }: { usuario: UserSummary }) {
   return (
     <Link
       href={`/admin/usuarios/${usuario.id}`}
-      className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+      className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium text-slate-900">{usuario.fullName}</span>

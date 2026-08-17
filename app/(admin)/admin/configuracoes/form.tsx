@@ -379,12 +379,12 @@ export function FormularioDeConfiguracoes({
               ))}
             </ul>
 
-            <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-3">
-              <p className="text-xs font-semibold tracking-wide text-sky-900 uppercase">
+            <div className="rounded-lg border border-senai-200 bg-senai-50 px-3 py-3">
+              <p className="text-xs font-semibold tracking-wide text-senai-900 uppercase">
                 Prévia com dados de exemplo
               </p>
-              <p className="mt-1 text-sm whitespace-pre-wrap text-sky-950">{previa}</p>
-              <p className="mt-2 text-xs text-sky-900">
+              <p className="mt-1 text-sm whitespace-pre-wrap text-senai-950">{previa}</p>
+              <p className="mt-2 text-xs text-senai-900">
                 Exemplo: {EXEMPLO_WHATSAPP.solicitante} pedindo a{" "}
                 {EXEMPLO_WHATSAPP.professor} a {EXEMPLO_WHATSAPP.recurso}.
               </p>

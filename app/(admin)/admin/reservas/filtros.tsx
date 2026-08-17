@@ -194,7 +194,7 @@ export function Filtros({
                       type="checkbox"
                       checked={marcado}
                       onChange={(evento) => alternarStatus(status, evento.target.checked)}
-                      className="size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+                      className="size-5 shrink-0 rounded border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
                     />
                     {rotulo}
                   </label>

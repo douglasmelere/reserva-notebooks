@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 
 const controlBase =
   "w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 shadow-xs " +
-  "placeholder:text-slate-400 focus:outline-2 focus:outline-offset-0 focus:outline-sky-600 " +
+  "placeholder:text-slate-400 focus:outline-2 focus:outline-offset-0 focus:outline-senai-600 " +
   "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
 const controlState = (hasError: boolean) =>
@@ -255,7 +255,7 @@ export function CheckboxField({
         type="checkbox"
         aria-describedby={hint ? hintId : undefined}
         aria-invalid={Boolean(errorText) || undefined}
-        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+        className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
         {...rest}
       />
       <div className="flex flex-col gap-0.5">

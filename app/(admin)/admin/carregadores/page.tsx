@@ -238,7 +238,7 @@ export default async function CarregadoresPage({
                       // (44px) dos demais botões da tela.
                       <Link
                         href={`/admin/kits/${carregador.kit.id}`}
-                        className="inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                        className="inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                       >
                         Abrir {carregador.kit.name}
                         <span className="sr-only">

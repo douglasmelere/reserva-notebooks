@@ -165,8 +165,8 @@ export default async function AdminOcorrenciasPage({
               aria-current={ativo ? "true" : undefined}
               // O anel reforça o cartão ativo para quem enxerga; quem não
               // enxerga tem o `aria-current` e a dica escrita dentro do cartão.
-              className={`block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
-                ativo ? "ring-2 ring-sky-700 ring-offset-2" : ""
+              className={`block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600 ${
+                ativo ? "ring-2 ring-senai-700 ring-offset-2" : ""
               }`}
             >
               <Stat
@@ -301,7 +301,7 @@ export default async function AdminOcorrenciasPage({
                         <Td>
                           <Link
                             href={`/admin/ocorrencias/${ocorrencia.id}`}
-                            className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-sky-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+                            className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-senai-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600"
                           >
                             Abrir
                             <span className="sr-only"> a ocorrência {ocorrencia.code}</span>
@@ -376,7 +376,7 @@ function CartaoOcorrencia({ ocorrencia }: { ocorrencia: IncidentDTO }) {
       </p>
       <Link
         href={`/admin/ocorrencias/${ocorrencia.id}`}
-        className="mt-2 inline-flex min-h-11 items-center rounded-lg text-sm font-medium text-sky-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+        className="mt-2 inline-flex min-h-11 items-center rounded-lg text-sm font-medium text-senai-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600"
       >
         Abrir ocorrência
         <span className="sr-only"> {ocorrencia.code}</span>

@@ -312,7 +312,7 @@ export default async function DisponibilidadePage({
 
         <Link
           href={comFiltros({ date: dataAnterior })}
-          className="order-2 inline-flex min-h-11 items-center justify-self-start rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 sm:order-1"
+          className="order-2 inline-flex min-h-11 items-center justify-self-start rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700 sm:order-1"
         >
           <span aria-hidden="true">←</span>
           <span className="ml-2">{rotuloAnterior}</span>
@@ -320,7 +320,7 @@ export default async function DisponibilidadePage({
 
         <Link
           href={comFiltros({ date: dataSeguinte })}
-          className="order-3 inline-flex min-h-11 items-center justify-self-end rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700 sm:order-3"
+          className="order-3 inline-flex min-h-11 items-center justify-self-end rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700 sm:order-3"
         >
           <span className="mr-2">{rotuloSeguinte}</span>
           <span aria-hidden="true">→</span>
@@ -485,7 +485,7 @@ function VisaoDia({
 function Legenda() {
   const itens = [
     { cor: "bg-emerald-500", rotulo: "Disponível", texto: "livre no período" },
-    { cor: "bg-sky-500", rotulo: "Reservado", texto: "já com um professor" },
+    { cor: "bg-senai-500", rotulo: "Reservado", texto: "já com um professor" },
     { cor: "bg-amber-500", rotulo: "Em manutenção", texto: "em conserto" },
     { cor: "bg-red-500", rotulo: "Indisponível", texto: "fora de uso" },
   ];
@@ -598,11 +598,11 @@ function VisaoCalendario({
                       aria-current={selecionado ? "date" : undefined}
                       className={[
                         "flex min-h-20 flex-col justify-between rounded-lg border p-2 transition-colors",
-                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700",
+                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700",
                         selecionado
                           ? // Anel mais grosso além da cor: quem não distingue
                             // azul de cinza percebe a espessura da borda.
-                            "border-sky-600 bg-sky-50 ring-2 ring-sky-600"
+                            "border-senai-600 bg-senai-50 ring-2 ring-senai-600"
                           : "border-slate-200 bg-white hover:bg-slate-50",
                       ].join(" ")}
                     >

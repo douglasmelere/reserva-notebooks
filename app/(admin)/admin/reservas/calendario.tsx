@@ -198,11 +198,11 @@ export function Calendario({
                     aria-current={dia.ehHoje ? "date" : undefined}
                     className={[
                       "flex min-h-16 flex-col gap-1 overflow-hidden rounded-lg border p-1.5 text-left transition-colors sm:min-h-24 sm:p-2",
-                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600",
                       dia.doMes
-                        ? "border-slate-200 bg-white hover:bg-sky-50"
+                        ? "border-slate-200 bg-white hover:bg-senai-50"
                         : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100",
-                      dia.ehHoje ? "ring-2 ring-sky-600 ring-inset" : "",
+                      dia.ehHoje ? "ring-2 ring-senai-600 ring-inset" : "",
                     ].join(" ")}
                   >
                     {/* "hoje" quebra para a linha de baixo no celular em vez de
@@ -218,7 +218,7 @@ export function Calendario({
                         {dia.diaDoMes}
                       </span>
                       {dia.ehHoje && (
-                        <span className="text-[0.65rem] font-medium text-sky-700">
+                        <span className="text-[0.65rem] font-medium text-senai-700">
                           hoje
                         </span>
                       )}
@@ -229,7 +229,7 @@ export function Calendario({
                         {/* No celular só o número cabe no selo; o rótulo por
                             extenso volta a partir de `sm`. O leitor de tela
                             recebe a frase completa pelo `aria-label` do link. */}
-                        <span className="inline-flex w-fit max-w-full items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[0.7rem] font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset">
+                        <span className="inline-flex w-fit max-w-full items-center rounded-full bg-senai-50 px-1.5 py-0.5 text-[0.7rem] font-semibold text-senai-800 ring-1 ring-senai-200 ring-inset">
                           {total}
                           <span className="hidden sm:inline">
                             &nbsp;reserva{total > 1 ? "s" : ""}

@@ -19,7 +19,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-sky-700 text-white hover:bg-sky-800 focus-visible:outline-sky-700 disabled:bg-sky-300",
+    "bg-senai-700 text-white hover:bg-senai-800 focus-visible:outline-senai-700 disabled:bg-senai-300",
   secondary:
     "bg-slate-100 text-slate-800 hover:bg-slate-200 focus-visible:outline-slate-500 disabled:text-slate-400",
   danger:

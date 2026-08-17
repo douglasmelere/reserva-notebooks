@@ -581,7 +581,7 @@ export function ListaDeRecursos({
                   checked={selecionados.includes(opcao.id)}
                   disabled={desabilitado}
                   onChange={(evento) => aoAlternar(opcao.id, evento.target.checked)}
-                  className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+                  className="mt-0.5 size-5 shrink-0 rounded border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">

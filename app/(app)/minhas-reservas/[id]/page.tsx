@@ -119,7 +119,7 @@ export default async function DetalheDaReservaPage({
     <>
       <Link
         href="/minhas-reservas"
-        className="mb-3 inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="mb-3 inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         <span aria-hidden="true">←</span>&nbsp;Voltar para minhas reservas
       </Link>
@@ -378,7 +378,7 @@ function BlocoDoKit({
 
       {detalhe && detalhe.notebooks.length > 0 && (
         <details className="mt-3">
-          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-sky-800">
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-senai-800">
             Notebooks que vêm neste kit ({detalhe.notebooks.length})
           </summary>
           <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">

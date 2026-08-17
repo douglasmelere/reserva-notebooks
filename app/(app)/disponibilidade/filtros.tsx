@@ -127,9 +127,9 @@ export function Filtros({ valores }: { valores: FiltrosValores }) {
                 onClick={() => trocarVisao(visao.valor)}
                 className={cn(
                   "min-h-11 rounded-lg px-4 text-sm font-medium transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700",
                   ativa
-                    ? "bg-sky-700 text-white"
+                    ? "bg-senai-700 text-white"
                     : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50",
                 )}
               >

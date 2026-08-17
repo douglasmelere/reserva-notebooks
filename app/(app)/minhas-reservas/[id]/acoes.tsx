@@ -458,7 +458,7 @@ function FormularioDeDevolucao({
     <div
       ref={containerRef}
       tabIndex={-1}
-      className="rounded-lg border border-slate-200 bg-slate-50 p-4 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+      className="rounded-lg border border-slate-200 bg-slate-50 p-4 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
     >
       <fieldset>
         <legend className="text-sm font-semibold text-slate-900">
@@ -573,7 +573,7 @@ function OpcaoDeDevolucao({
       className={cn(
         "flex min-h-11 cursor-pointer gap-3 rounded-lg border bg-white p-3 transition-colors",
         marcada
-          ? "border-sky-600 ring-1 ring-sky-600"
+          ? "border-senai-600 ring-1 ring-senai-600"
           : "border-slate-300 hover:border-slate-400",
       )}
     >
@@ -582,7 +582,7 @@ function OpcaoDeDevolucao({
         name="devolucao-tudo-bem"
         checked={marcada}
         onChange={onSelecionar}
-        className="mt-0.5 size-5 shrink-0 border-slate-300 text-sky-700 focus:outline-2 focus:outline-offset-2 focus:outline-sky-600"
+        className="mt-0.5 size-5 shrink-0 border-slate-300 text-senai-700 focus:outline-2 focus:outline-offset-2 focus:outline-senai-600"
       />
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-slate-900">

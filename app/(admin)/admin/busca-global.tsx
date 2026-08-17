@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Boxes,
+  FolderOpen,
+  Laptop,
+  TriangleAlert,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -35,12 +43,12 @@ type RespostaBusca = {
 };
 
 /** Ícone por tipo: decorativo, sempre ao lado do rótulo escrito do grupo. */
-const ICONE_GRUPO: Record<GrupoBusca["tipo"], string> = {
-  reservas: "🗂️",
-  kits: "🧰",
-  notebooks: "💻",
-  ocorrencias: "⚠️",
-  professores: "👥",
+const ICONE_GRUPO: Record<GrupoBusca["tipo"], LucideIcon> = {
+  reservas: FolderOpen,
+  kits: Boxes,
+  notebooks: Laptop,
+  ocorrencias: TriangleAlert,
+  professores: Users,
 };
 
 /** A API recusa termos com menos de 2 caracteres; nem chegamos a chamá-la. */
@@ -231,7 +239,7 @@ export function BuscaGlobal() {
 
           {!carregando && erro && (
             <p className="flex gap-2 px-3 py-2 text-sm font-medium text-red-700">
-              <span aria-hidden="true">⚠</span>
+              <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
               <span>{erro}</span>
             </p>
           )}
@@ -264,7 +272,15 @@ export function BuscaGlobal() {
                     id={grupoId(grupo.tipo)}
                     className="px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase"
                   >
-                    <span aria-hidden="true">{ICONE_GRUPO[grupo.tipo]} </span>
+                    {(() => {
+                      const Icone = ICONE_GRUPO[grupo.tipo];
+                      return (
+                        <Icone
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-slate-400"
+                        />
+                      );
+                    })()}
                     {grupo.rotulo}
                   </p>
                   <ul role="group" aria-labelledby={grupoId(grupo.tipo)}>
@@ -288,7 +304,7 @@ export function BuscaGlobal() {
                               // Sublinhado e fundo juntos: quem não distingue
                               // cores continua vendo qual opção está ativa.
                               selecionado
-                                ? "bg-sky-50 text-sky-900 underline underline-offset-2"
+                                ? "bg-senai-50 text-senai-900 underline underline-offset-2"
                                 : "text-slate-800 hover:bg-slate-100",
                             )}
                           >

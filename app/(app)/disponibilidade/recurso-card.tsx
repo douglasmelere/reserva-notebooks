@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  CalendarClock,
+  CircleCheck,
+  CircleSlash,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { useId, useState } from "react";
 import { api, ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
@@ -31,31 +38,31 @@ type ContatoResposta =
 
 const ESTADO: Record<
   AvailabilityState,
-  { rotulo: string; tone: BadgeTone; barra: string; icone: string }
+  { rotulo: string; tone: BadgeTone; barra: string; icone: LucideIcon }
 > = {
   DISPONIVEL: {
     rotulo: "Disponível",
     tone: "success",
     barra: "bg-emerald-500",
-    icone: "✓",
+    icone: CircleCheck,
   },
   RESERVADO: {
     rotulo: "Reservado",
     tone: "info",
-    barra: "bg-sky-500",
-    icone: "●",
+    barra: "bg-senai-500",
+    icone: CalendarClock,
   },
   MANUTENCAO: {
     rotulo: "Em manutenção",
     tone: "warning",
     barra: "bg-amber-500",
-    icone: "⚠",
+    icone: Wrench,
   },
   INDISPONIVEL: {
     rotulo: "Indisponível",
     tone: "danger",
     barra: "bg-red-500",
-    icone: "✕",
+    icone: CircleSlash,
   },
 };
 
@@ -103,7 +110,7 @@ export function RecursoCard({ recurso }: { recurso: Recurso }) {
             {titulo}
           </h3>
           <Badge tone={estado.tone}>
-            <span aria-hidden="true">{estado.icone}</span>
+            <estado.icone aria-hidden="true" className="size-3.5" />
             {estado.rotulo}
           </Badge>
         </div>

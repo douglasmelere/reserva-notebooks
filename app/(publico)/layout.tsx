@@ -1,3 +1,5 @@
+import { linhaDeCredito } from "@/components/brand/creditos";
+import { Logo } from "@/components/brand/logo";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth";
@@ -29,13 +31,13 @@ export default async function PublicoLayout({
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-slate-50 px-4 py-10">
-      <header className="flex w-full max-w-md flex-col items-center gap-3 text-center">
-        <span
-          aria-hidden="true"
-          className="flex size-12 items-center justify-center rounded-xl bg-sky-700 text-2xl shadow-xs"
-        >
-          💻
-        </span>
+      {/*
+        A marca aparece sozinha e no tamanho maior aqui: é a única tela que o
+        professor vê antes de entrar, e o manual pede a aplicação limpa sobre
+        fundo claro — sem caixa colorida em volta nem recorte.
+      */}
+      <header className="flex w-full max-w-md flex-col items-center gap-4 text-center">
+        <Logo tamanho="xl" />
         <div>
           <p className="text-lg font-bold tracking-tight text-slate-900">
             Reserva de Notebooks
@@ -48,11 +50,12 @@ export default async function PublicoLayout({
 
       <main className="w-full max-w-md">{children}</main>
 
-      <footer className="w-full max-w-md text-center text-xs text-slate-500">
+      <footer className="w-full max-w-md space-y-2 text-center text-xs text-slate-500">
         <p>
           Sistema de uso interno para reserva de notebooks, maletas e carrinhos.
           Em caso de dúvida ou problema de acesso, procure a supervisão.
         </p>
+        <p>{linhaDeCredito()}</p>
       </footer>
     </div>
   );

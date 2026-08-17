@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { api } from "@/lib/api-client";
+import { Assinatura, Logo } from "@/components/brand/logo";
+import { Rodape } from "@/components/brand/rodape";
 import { isActive, navSectionsFor, type NavSection } from "./nav-config";
 import type { Role } from "@/generated/prisma/enums";
 
@@ -42,10 +45,14 @@ export function AppShell({
   }, [pathname]);
 
   return (
-    <div className="min-h-dvh bg-slate-50">
+    // A altura do cabeçalho vira variável CSS porque a coluna lateral precisa
+    // começar exatamente abaixo dele e ocupar o resto da tela. Antes era um
+    // valor fixo repetido em dois lugares — e ao crescer a marca, o menu ficava
+    // desalinhado e com rolagem sobrando no fim.
+    <div className="flex min-h-dvh flex-col bg-slate-50 [--altura-cabecalho:4.5rem]">
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-60 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg"
       >
         Pular para o conteúdo
       </a>
@@ -54,10 +61,10 @@ export function AppShell({
         O cabeçalho fica acima do painel (z-40) e do fundo escurecido (z-30):
         o botão que abre o menu é o MESMO que o fecha, e com z-index igual ao
         do fundo ele ficava coberto — no celular dava para abrir o menu e não
-        dava para fechá-lo pelo ✕.
+        dava para fechá-lo.
       */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
-        <div className="flex items-center gap-3 px-4 py-3">
+      <header className="sticky top-0 z-50 h-(--altura-cabecalho) border-b border-slate-200 bg-white">
+        <div className="flex h-full items-center gap-3 px-4">
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
@@ -65,28 +72,35 @@ export function AppShell({
             aria-controls="menu-principal"
             className="-ml-1 rounded-lg p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
           >
-            <span aria-hidden="true" className="text-lg">
-              {menuOpen ? "✕" : "☰"}
-            </span>
+            {menuOpen ? (
+              <X aria-hidden="true" className="size-5" />
+            ) : (
+              <Menu aria-hidden="true" className="size-5" />
+            )}
             <span className="sr-only">
               {menuOpen ? "Fechar menu" : "Abrir menu"}
             </span>
           </button>
 
-          <Link href="/inicio" className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-slate-900">
-              Reserva de Notebooks
-            </span>
-            <span className="block truncate text-xs text-slate-500">
-              {institutionName}
-            </span>
+          <Link href="/inicio" className="min-w-0 flex-1 rounded-lg">
+            {/*
+              No celular sobra pouca largura entre o botão do menu e o "Sair".
+              Em vez de espremer a marca, mostramos só ela — o título da tela
+              já aparece no h1 logo abaixo, então nada se perde.
+            */}
+            <Logo tamanho="md" className="sm:hidden" />
+            <Assinatura
+              instituicao={institutionName}
+              tamanho="md"
+              className="hidden sm:flex"
+            />
           </Link>
 
           <UserMenu user={user} />
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl">
+      <div className="mx-auto flex w-full max-w-7xl flex-1">
         <SidebarNav
           sections={sections}
           pathname={pathname}
@@ -98,6 +112,8 @@ export function AppShell({
           {children}
         </main>
       </div>
+
+      <Rodape />
     </div>
   );
 }
@@ -129,9 +145,9 @@ function SidebarNav({
         className={cn(
           "z-40 w-64 shrink-0 border-r border-slate-200 bg-white",
           // Celular: painel deslizante. Desktop: coluna sempre visível.
-          "fixed inset-y-0 left-0 overflow-y-auto pt-16 transition-transform lg:static lg:translate-x-0 lg:pt-0",
+          "fixed inset-y-0 left-0 overflow-y-auto pt-(--altura-cabecalho) transition-transform lg:static lg:translate-x-0 lg:pt-0",
           open ? "translate-x-0" : "-translate-x-full",
-          "lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)]",
+          "lg:sticky lg:top-(--altura-cabecalho) lg:h-[calc(100dvh-var(--altura-cabecalho))]",
         )}
       >
         <div className="flex flex-col gap-6 px-3 py-4">
@@ -143,6 +159,7 @@ function SidebarNav({
               <ul className="flex flex-col gap-0.5">
                 {section.items.map((item) => {
                   const active = isActive(item, pathname);
+                  const Icone = item.icon;
                   return (
                     <li key={item.href}>
                       <Link
@@ -151,13 +168,22 @@ function SidebarNav({
                         className={cn(
                           "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
                           active
-                            ? "bg-sky-50 font-semibold text-sky-800"
+                            ? "bg-senai-50 font-semibold text-senai-800"
                             : "text-slate-700 hover:bg-slate-100",
                         )}
                       >
-                        <span aria-hidden="true" className="text-base">
-                          {item.icon}
-                        </span>
+                        {/*
+                          O ícone é decorativo: quem informa é o rótulo ao lado.
+                          Marcá-lo como imagem faria o leitor de tela anunciar
+                          duas vezes o mesmo item.
+                        */}
+                        <Icone
+                          aria-hidden="true"
+                          className={cn(
+                            "size-5 shrink-0",
+                            active ? "text-senai-700" : "text-slate-400",
+                          )}
+                        />
                         {item.label}
                       </Link>
                     </li>
@@ -200,8 +226,9 @@ function UserMenu({ user }: { user: ShellUser }) {
         type="button"
         onClick={sair}
         disabled={saindo}
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
       >
+        <LogOut aria-hidden="true" className="size-4" />
         {saindo ? "Saindo..." : "Sair"}
       </button>
     </div>

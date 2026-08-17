@@ -1,9 +1,12 @@
 # Reserva de Notebooks
 
 Sistema web para reserva e gestão de **notebooks, maletas e carrinhos** em uma
-instituição de ensino. Professores consultam disponibilidade e reservam
-equipamentos; a supervisão administra o inventário, as reservas, as ocorrências
-e os relatórios.
+instituição de ensino.
+
+Professores consultam disponibilidade e reservam equipamentos; a supervisão
+administra o inventário, as reservas, as ocorrências e os relatórios.
+
+> Desenvolvido por **Douglas Melere** para o **SENAI/SC** · 2026
 
 Roda como um container Node comum. O alvo de produção é uma **VPS da Hostinger
 com Coolify** — nada aqui depende da Vercel.
@@ -362,6 +365,21 @@ Resumo do que o container garante:
 - logs em JSON, sem senha, token ou stack trace.
 
 ---
+
+## Créditos
+
+Desenvolvido por **Douglas Melere** para o **SENAI/SC**, 2026.
+
+A autoria fica registrada em um único lugar —
+`src/components/brand/creditos.ts` — de onde saem o rodapé de todas as telas, a
+página **Sobre o sistema** e o campo `author` do `package.json`.
+
+A marca SENAI é a versão oficial obtida no
+[repositório de marcas do Sistema Indústria](https://sistemaindustria.portaldaindustria.com.br/manual-de-marcas),
+aplicada conforme o manual. Detalhes e regras de substituição em
+[`public/marca/LEIA-ME.md`](public/marca/LEIA-ME.md).
+
+Ícones: [Lucide](https://lucide.dev) (ISC).
 
 ## Licença
 

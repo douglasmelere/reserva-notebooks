@@ -244,7 +244,7 @@ export default async function AdminDetalheOcorrenciaPage({
                           href={anexo.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+                          className="block overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img

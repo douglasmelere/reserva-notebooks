@@ -13,7 +13,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/inicio"
-        className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-sky-700 px-5 text-sm font-medium text-white hover:bg-sky-800"
+        className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-senai-700 px-5 text-sm font-medium text-white hover:bg-senai-800"
       >
         Voltar ao início
       </Link>

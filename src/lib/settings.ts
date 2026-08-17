@@ -70,7 +70,7 @@ export const settingsSchema = z.object({
   /// Marca reservas não retiradas como não comparecimento após N horas.
   noShowAfterHours: z.coerce.number().min(0).max(72).default(2),
   /// Nome da instituição, exibido no cabeçalho e no comprovante.
-  institutionName: z.string().min(1).default("Instituição de Ensino"),
+  institutionName: z.string().min(1).default("SENAI/SC"),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

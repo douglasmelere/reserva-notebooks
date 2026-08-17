@@ -1,3 +1,21 @@
+import {
+  Boxes,
+  CalendarPlus,
+  CalendarSearch,
+  ChartColumn,
+  ClipboardList,
+  FolderOpen,
+  House,
+  Laptop,
+  LayoutDashboard,
+  Plug,
+  Settings,
+  TriangleAlert,
+  UserRound,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import type { Role } from "@/generated/prisma/enums";
 
 /**
@@ -15,8 +33,8 @@ import type { Role } from "@/generated/prisma/enums";
 export type NavItem = {
   href: string;
   label: string;
-  /** Emoji usado como ícone; decorativo, sempre acompanhado de texto. */
-  icon: string;
+  /** Ícone do lucide-react. Decorativo: o rótulo em texto é quem informa. */
+  icon: LucideIcon;
   /** Casa também as subrotas (ex.: /admin/kits/novo). */
   matchPrefix?: boolean;
 };
@@ -29,27 +47,67 @@ export type NavSection = {
 export const TEACHER_NAV: NavSection = {
   title: "Minha área",
   items: [
-    { href: "/inicio", label: "Início", icon: "🏠" },
-    { href: "/reservar", label: "Fazer reserva", icon: "➕" },
-    { href: "/disponibilidade", label: "Disponibilidade", icon: "📅" },
-    { href: "/minhas-reservas", label: "Minhas reservas", icon: "📋", matchPrefix: true },
-    { href: "/ocorrencias", label: "Meus problemas", icon: "🛠️", matchPrefix: true },
-    { href: "/perfil", label: "Meu perfil", icon: "👤" },
+    { href: "/inicio", label: "Início", icon: House },
+    { href: "/reservar", label: "Fazer reserva", icon: CalendarPlus },
+    { href: "/disponibilidade", label: "Disponibilidade", icon: CalendarSearch },
+    {
+      href: "/minhas-reservas",
+      label: "Minhas reservas",
+      icon: ClipboardList,
+      matchPrefix: true,
+    },
+    {
+      href: "/ocorrencias",
+      label: "Meus problemas",
+      icon: Wrench,
+      matchPrefix: true,
+    },
+    { href: "/perfil", label: "Meu perfil", icon: UserRound },
   ],
 };
 
 export const ADMIN_NAV: NavSection = {
   title: "Supervisão",
   items: [
-    { href: "/admin", label: "Painel", icon: "📊" },
-    { href: "/admin/usuarios", label: "Usuários", icon: "👥", matchPrefix: true },
-    { href: "/admin/kits", label: "Kits e carrinhos", icon: "🧰", matchPrefix: true },
-    { href: "/admin/notebooks", label: "Notebooks", icon: "💻", matchPrefix: true },
-    { href: "/admin/carregadores", label: "Carregadores", icon: "🔌", matchPrefix: true },
-    { href: "/admin/reservas", label: "Todas as reservas", icon: "🗂️", matchPrefix: true },
-    { href: "/admin/ocorrencias", label: "Ocorrências", icon: "⚠️", matchPrefix: true },
-    { href: "/admin/relatorios", label: "Relatórios", icon: "📈", matchPrefix: true },
-    { href: "/admin/configuracoes", label: "Configurações", icon: "⚙️" },
+    { href: "/admin", label: "Painel", icon: LayoutDashboard },
+    { href: "/admin/usuarios", label: "Usuários", icon: Users, matchPrefix: true },
+    {
+      href: "/admin/kits",
+      label: "Kits e carrinhos",
+      icon: Boxes,
+      matchPrefix: true,
+    },
+    {
+      href: "/admin/notebooks",
+      label: "Notebooks",
+      icon: Laptop,
+      matchPrefix: true,
+    },
+    {
+      href: "/admin/carregadores",
+      label: "Carregadores",
+      icon: Plug,
+      matchPrefix: true,
+    },
+    {
+      href: "/admin/reservas",
+      label: "Todas as reservas",
+      icon: FolderOpen,
+      matchPrefix: true,
+    },
+    {
+      href: "/admin/ocorrencias",
+      label: "Ocorrências",
+      icon: TriangleAlert,
+      matchPrefix: true,
+    },
+    {
+      href: "/admin/relatorios",
+      label: "Relatórios",
+      icon: ChartColumn,
+      matchPrefix: true,
+    },
+    { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
   ],
 };
 

@@ -465,7 +465,7 @@ function Tabela({
                                   className="block h-2 w-24 rounded-full bg-slate-100"
                                 >
                                   <span
-                                    className="block h-2 rounded-full bg-sky-600"
+                                    className="block h-2 rounded-full bg-senai-600"
                                     style={{
                                       width: `${Math.max(2, Math.round((numero / maximo) * 100))}%`,
                                     }}

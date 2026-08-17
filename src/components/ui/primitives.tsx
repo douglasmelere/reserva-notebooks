@@ -1,4 +1,10 @@
 import type { ReactNode } from "react";
+import {
+  CircleCheck,
+  Info,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -85,7 +91,7 @@ const BADGE_TONES: Record<BadgeTone, string> = {
   success: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   warning: "bg-amber-50 text-amber-900 ring-amber-200",
   danger: "bg-red-50 text-red-800 ring-red-200",
-  info: "bg-sky-50 text-sky-800 ring-sky-200",
+  info: "bg-senai-50 text-senai-800 ring-senai-200",
   muted: "bg-slate-50 text-slate-500 ring-slate-200",
 };
 
@@ -115,14 +121,17 @@ export function Badge({
 
 export type AlertTone = "info" | "success" | "warning" | "danger";
 
-const ALERT_TONES: Record<AlertTone, { box: string; icon: string }> = {
-  info: { box: "border-sky-200 bg-sky-50 text-sky-900", icon: "ℹ" },
+const ALERT_TONES: Record<AlertTone, { box: string; icon: LucideIcon }> = {
+  info: { box: "border-senai-200 bg-senai-50 text-senai-900", icon: Info },
   success: {
     box: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    icon: "✓",
+    icon: CircleCheck,
   },
-  warning: { box: "border-amber-200 bg-amber-50 text-amber-900", icon: "⚠" },
-  danger: { box: "border-red-200 bg-red-50 text-red-900", icon: "⚠" },
+  warning: {
+    box: "border-amber-200 bg-amber-50 text-amber-900",
+    icon: TriangleAlert,
+  },
+  danger: { box: "border-red-200 bg-red-50 text-red-900", icon: TriangleAlert },
 };
 
 export function Alert({
@@ -137,6 +146,7 @@ export function Alert({
   className?: string;
 }) {
   const config = ALERT_TONES[tone];
+  const Icone = config.icon;
   return (
     <div
       // Erros e avisos são anunciados assim que aparecem na tela.
@@ -147,9 +157,7 @@ export function Alert({
         className,
       )}
     >
-      <span aria-hidden="true" className="mt-0.5 shrink-0 font-bold">
-        {config.icon}
-      </span>
+      <Icone aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
       <div className="min-w-0 flex-1">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div className={title ? "mt-1" : undefined}>{children}</div>}
@@ -238,7 +246,7 @@ export function Stat({
     success: "text-emerald-700",
     warning: "text-amber-700",
     danger: "text-red-700",
-    info: "text-sky-700",
+    info: "text-senai-700",
     muted: "text-slate-500",
   };
 
@@ -321,7 +329,7 @@ export function Spinner({ label = "Carregando..." }: { label?: string }) {
     <div role="status" className="flex items-center gap-2 text-sm text-slate-600">
       <span
         aria-hidden="true"
-        className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-sky-700"
+        className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-senai-700"
       />
       {label}
     </div>

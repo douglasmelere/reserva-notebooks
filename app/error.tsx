@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 
 /**
@@ -30,9 +31,7 @@ export default function GlobalError({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-4xl" aria-hidden="true">
-        ⚠️
-      </p>
+      <TriangleAlert aria-hidden="true" className="size-10 text-amber-600" />
       <h1 className="text-xl font-semibold text-slate-900">
         Algo deu errado nesta tela
       </h1>
@@ -49,7 +48,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-11 items-center rounded-lg bg-sky-700 px-5 text-sm font-medium text-white hover:bg-sky-800"
+          className="inline-flex min-h-11 items-center rounded-lg bg-senai-700 px-5 text-sm font-medium text-white hover:bg-senai-800"
         >
           Tentar novamente
         </button>

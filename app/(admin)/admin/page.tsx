@@ -246,7 +246,7 @@ export default async function PainelPage() {
                       {kit.professor.fullName}
                       <Link
                         href={`/admin/reservas/${kit.reservationId}`}
-                        className="block text-xs text-sky-800 underline underline-offset-2"
+                        className="block text-xs text-senai-800 underline underline-offset-2"
                       >
                         Reserva {kit.reservationCode}
                       </Link>
@@ -389,7 +389,7 @@ export default async function PainelPage() {
                       className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
                     >
                       <div
-                        className="h-full rounded-full bg-sky-700"
+                        className="h-full rounded-full bg-senai-700"
                         style={{ width: `${Math.max(percentual, kit.reservas > 0 ? 2 : 0)}%` }}
                       />
                     </div>

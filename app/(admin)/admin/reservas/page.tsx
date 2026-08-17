@@ -1,3 +1,4 @@
+import { CalendarDays, ClipboardList, Plus } from "lucide-react";
 import Link from "next/link";
 import type { ReservationStatus } from "@/generated/prisma/enums";
 import { requireSupervisor } from "@/lib/auth";
@@ -55,7 +56,7 @@ const STATUS_VALIDOS = Object.keys(RESERVATION_STATUS_LABEL) as ReservationStatu
 const PAGINA_TAMANHO = 20;
 
 const botaoPrimario =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-senai-700 px-4 text-sm font-medium text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700";
 const botaoSecundario =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
 
@@ -168,7 +169,7 @@ export default async function TodasAsReservasPage({
               Exportar CSV
             </a>
             <Link className={botaoPrimario} href="/admin/reservas/nova">
-              <span aria-hidden="true">➕</span>
+              <Plus aria-hidden="true" className="size-4" />
               Nova reserva
             </Link>
           </>
@@ -186,8 +187,8 @@ export default async function TodasAsReservasPage({
         <ul className="flex gap-2">
           {(
             [
-              { chave: "lista", rotulo: "Lista", icone: "📋" },
-              { chave: "calendario", rotulo: "Calendário", icone: "📅" },
+              { chave: "lista", rotulo: "Lista", icone: ClipboardList },
+              { chave: "calendario", rotulo: "Calendário", icone: CalendarDays },
             ] as const
           ).map((opcao) => {
             const ativo = view === opcao.chave;
@@ -198,11 +199,11 @@ export default async function TodasAsReservasPage({
                   aria-current={ativo ? "page" : undefined}
                   className={
                     ativo
-                      ? "inline-flex min-h-11 items-center gap-2 rounded-lg bg-sky-50 px-4 text-sm font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset"
+                      ? "inline-flex min-h-11 items-center gap-2 rounded-lg bg-senai-50 px-4 text-sm font-semibold text-senai-800 ring-1 ring-senai-200 ring-inset"
                       : "inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-medium text-slate-700 hover:bg-slate-100"
                   }
                 >
-                  <span aria-hidden="true">{opcao.icone}</span>
+                  <opcao.icone aria-hidden="true" className="size-4" />
                   {opcao.rotulo}
                 </Link>
               </li>
@@ -367,7 +368,7 @@ async function VisaoLista({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Link
                     href={`/admin/reservas/${linha.id}`}
-                    className="text-sm font-semibold text-sky-800 underline underline-offset-2"
+                    className="text-sm font-semibold text-senai-800 underline underline-offset-2"
                   >
                     {linha.code}
                   </Link>
@@ -440,7 +441,7 @@ async function VisaoLista({
                 <Td>
                   <Link
                     href={`/admin/reservas/${linha.id}`}
-                    className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-800 underline underline-offset-2 hover:bg-sky-50"
+                    className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-senai-800 underline underline-offset-2 hover:bg-senai-50"
                   >
                     Gerenciar
                     <span className="sr-only"> a reserva {linha.code}</span>

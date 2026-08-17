@@ -128,7 +128,7 @@ export default async function NovaOcorrenciaPage({
       />
 
       <p className="mt-6 text-sm text-slate-600">
-        <Link href="/ocorrencias" className="font-medium text-sky-800 underline">
+        <Link href="/ocorrencias" className="font-medium text-senai-800 underline">
           Voltar para meus problemas
         </Link>
       </p>

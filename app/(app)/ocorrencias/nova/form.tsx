@@ -607,7 +607,7 @@ function OcorrenciaRegistrada({
               accept="image/jpeg,image/png,image/webp"
               onChange={enviarArquivo}
               disabled={enviando || atingiuLimite}
-              className="mt-1.5 block w-full min-h-11 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:min-h-9 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:text-sm file:font-medium file:text-slate-800 focus:outline-2 focus:outline-offset-0 focus:outline-sky-600 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="mt-1.5 block w-full min-h-11 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:min-h-9 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:text-sm file:font-medium file:text-slate-800 focus:outline-2 focus:outline-offset-0 focus:outline-senai-600 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
           </div>
 
@@ -630,7 +630,7 @@ function OcorrenciaRegistrada({
                     href={anexo.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+                    className="block overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-600"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -651,7 +651,7 @@ function OcorrenciaRegistrada({
         <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
           <Link
             href={`/ocorrencias/${ocorrencia.id}`}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-senai-700 px-4 text-sm font-medium text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
           >
             Ver a ocorrência
           </Link>

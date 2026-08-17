@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Sistema de reserva e gestão de notebooks, maletas e carrinhos para instituições de ensino",
+  "author": "Douglas Melere",
+  "license": "UNLICENSED",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -26,6 +28,7 @@
     "@node-rs/argon2": "2.1.0",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",
+    "lucide-react": "^1.31.0",
     "pg": "8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",

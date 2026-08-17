@@ -218,7 +218,7 @@ export default async function NotebookDetalhePage({
                   {notebook.kit ? (
                     <Link
                       href={`/admin/kits/${notebook.kit.id}`}
-                      className="text-sky-800 underline underline-offset-2"
+                      className="text-senai-800 underline underline-offset-2"
                     >
                       {notebook.kit.name} ({notebook.kit.code})
                     </Link>
@@ -314,7 +314,7 @@ export default async function NotebookDetalhePage({
                               </Badge>
                               <Link
                                 href={`/admin/reservas/${reserva.reservationId}`}
-                                className="inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                                className="inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                               >
                                 Ver reserva {reserva.code}
                               </Link>
@@ -355,7 +355,7 @@ export default async function NotebookDetalhePage({
                               </Badge>
                               <Link
                                 href={`/admin/reservas/${reserva.reservationId}`}
-                                className="inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                                className="inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                               >
                                 Ver reserva {reserva.code}
                               </Link>
@@ -432,7 +432,7 @@ export default async function NotebookDetalhePage({
                       </p>
                       <Link
                         href={`/admin/ocorrencias/${ocorrencia.id}`}
-                        className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-sky-800 underline underline-offset-2"
+                        className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-senai-800 underline underline-offset-2"
                       >
                         Abrir ocorrência {ocorrencia.code}
                       </Link>
