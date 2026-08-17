@@ -1,0 +1,34 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+.output/
+.vinext/
+*.tsbuildinfo
+
+# Prisma Client gerado (recriado por `prisma generate` no build)
+src/generated/
+
+# Ambiente — nunca versionar segredos
+.env
+.env.*
+!.env.example
+
+# Testes
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Uploads locais em desenvolvimento
+/data/
+uploads/
+
+# Editores e SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.log

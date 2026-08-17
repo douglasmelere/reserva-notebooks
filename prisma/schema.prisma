@@ -1,0 +1,518 @@
+// ---------------------------------------------------------------------------
+// Sistema de Reserva de Notebooks, Maletas e Carrinhos
+//
+// Prisma 7 ("Rust-free"): o acesso ao banco usa o driver adapter `@prisma/adapter-pg`,
+// e o client é gerado como TypeScript puro em `src/generated/prisma`.
+// A URL de conexão fica em `prisma.config.ts`, não neste arquivo.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Perfis de acesso. A autorização é sempre verificada no servidor.
+enum Role {
+  PROFESSOR
+  SUPERVISOR
+}
+
+/// Tipos de kit. "Maleta" e "carrinho" são dois tipos do mesmo recurso.
+enum KitType {
+  MALETA
+  CARRINHO
+}
+
+/// Status operacional de um kit (maleta/carrinho).
+enum KitStatus {
+  DISPONIVEL
+  MANUTENCAO
+  INDISPONIVEL
+  DESATIVADO
+}
+
+/// Status operacional de um notebook individual.
+enum NotebookStatus {
+  DISPONIVEL
+  RESERVADO
+  EM_USO
+  MANUTENCAO
+  PERDIDO
+  INDISPONIVEL
+  DESATIVADO
+}
+
+/// Status de um kit de carregadores.
+enum ChargerKitStatus {
+  COMPLETO
+  INCOMPLETO
+  MANUTENCAO
+  INDISPONIVEL
+  DESATIVADO
+}
+
+/// Ciclo de vida de uma reserva.
+enum ReservationStatus {
+  SOLICITADA
+  CONFIRMADA
+  RETIRADA
+  EM_USO
+  DEVOLVIDA
+  ENCERRADA
+  CANCELADA
+  NAO_COMPARECEU
+}
+
+/// Um item de reserva aponta para um kit inteiro ou para um notebook avulso.
+enum ReservationItemType {
+  KIT
+  NOTEBOOK
+}
+
+/// Categoria da ocorrência registrada.
+enum IncidentCategory {
+  HARDWARE
+  CARREGADOR
+  BATERIA
+  TELA
+  TECLADO
+  TOUCHPAD
+  REDE
+  SISTEMA
+  SOFTWARE
+  DANO_FISICO
+  LIMPEZA
+  ACESSORIO_AUSENTE
+  DEVOLUCAO_INCOMPLETA
+  NOTEBOOK_FALTANTE
+  CARREGADOR_FALTANTE
+  OUTRO
+}
+
+/// Severidade da ocorrência. ALTA e CRITICA sugerem bloquear o recurso.
+enum IncidentSeverity {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+/// Ciclo de vida da ocorrência.
+enum IncidentStatus {
+  ABERTA
+  EM_ANALISE
+  EM_MANUTENCAO
+  RESOLVIDA
+  DESCARTADA
+  RECORRENTE
+}
+
+/// A qual entidade a ocorrência se refere.
+enum IncidentTargetType {
+  NOTEBOOK
+  KIT
+  CHARGER_KIT
+  RESERVATION
+}
+
+// ---------------------------------------------------------------------------
+// Usuários, sessões e proteção de login
+// ---------------------------------------------------------------------------
+
+/// Professor ou supervisor.
+///
+/// `username` guarda o mesmo login usado na intranet da instituição, para
+/// facilitar a memorização. A senha é guardada apenas como hash Argon2id.
+model User {
+  id             String   @id @default(uuid(7))
+  /// Login da intranet. Normalizado em minúsculas antes de gravar.
+  username       String   @unique
+  /// Hash Argon2id. Nunca exposto pela API nem registrado em log.
+  passwordHash   String   @map("password_hash")
+  fullName       String   @map("full_name")
+  /// E-mail institucional (opcional).
+  email          String?  @unique
+  /// Telefone/WhatsApp em formato E.164 sem "+" (ex.: 5548999998888).
+  phone          String?
+  /// Consentimento explícito para exibir o WhatsApp em conflitos de reserva.
+  whatsappOptIn  Boolean  @default(false) @map("whatsapp_opt_in")
+  department     String?
+  role           Role     @default(PROFESSOR)
+  /// Conta desativada não consegue autenticar nem receber novas reservas.
+  active         Boolean  @default(true)
+  /// Marca que a senha foi redefinida pela supervisão e deve ser trocada.
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+
+  createdAt         DateTime  @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt         DateTime  @db.Timestamptz(3) @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @db.Timestamptz(3) @map("last_login_at")
+  passwordChangedAt DateTime? @db.Timestamptz(3) @map("password_changed_at")
+
+  sessions             Session[]
+  reservations         Reservation[]        @relation("ReservationOwner")
+  reservationsCreated  Reservation[]        @relation("ReservationCreatedBy")
+  incidentsReported    Incident[]           @relation("IncidentReporter")
+  incidentsAssigned    Incident[]           @relation("IncidentAssignee")
+  auditLogs            AuditLog[]
+  settingsUpdated      SystemSetting[]
+  whatsappRequested    WhatsappContactLog[] @relation("WhatsappRequester")
+  whatsappTargeted     WhatsappContactLog[] @relation("WhatsappTarget")
+  incidentAttachments  IncidentAttachment[]
+
+  @@index([role, active])
+  @@index([fullName])
+  @@map("users")
+}
+
+/// Sessão de autenticação (cookie httpOnly opaco).
+///
+/// Guardamos apenas o SHA-256 do token: vazamento do banco não permite
+/// reutilizar sessões. Sessões são revogáveis, o que permite desativar uma
+/// conta e encerrar imediatamente todos os acessos dela.
+model Session {
+  id         String    @id @default(uuid(7))
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @db.Timestamptz(3) @map("expires_at")
+  createdAt  DateTime  @db.Timestamptz(3) @default(now()) @map("created_at")
+  lastUsedAt DateTime  @db.Timestamptz(3) @default(now()) @map("last_used_at")
+  revokedAt  DateTime? @db.Timestamptz(3) @map("revoked_at")
+  ip         String?
+  userAgent  String?   @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// Tentativas de login, usadas para rate limiting resistente a reinício do
+/// container (não depende de Redis nem de estado em memória do processo).
+model LoginAttempt {
+  id        String   @id @default(uuid(7))
+  /// Username tentado, normalizado. Nunca guardamos a senha.
+  username  String
+  ip        String
+  success   Boolean
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+
+  @@index([username, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Inventário: kits (maletas/carrinhos), notebooks e carregadores
+// ---------------------------------------------------------------------------
+
+/// Maleta ou carrinho de notebooks.
+model Kit {
+  id          String    @id @default(uuid(7))
+  /// Código/patrimônio único do kit.
+  code        String    @unique
+  /// Nome amigável, ex.: "Maleta 01", "Carrinho A".
+  name        String
+  type        KitType
+  /// Capacidade planejada de notebooks. Editável pela supervisão.
+  capacity    Int
+  location    String?
+  description String?
+  notes       String?
+  status      KitStatus @default(DISPONIVEL)
+
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  notebooks        Notebook[]
+  chargerKit       ChargerKit?
+  reservationItems ReservationItem[]
+  incidents        Incident[]
+
+  @@index([type, status])
+  @@index([status])
+  @@map("kits")
+}
+
+/// Notebook individual. Pode pertencer a um kit ou ser avulso.
+model Notebook {
+  id           String         @id @default(uuid(7))
+  /// Número de patrimônio/etiqueta. Único.
+  assetTag     String         @unique @map("asset_tag")
+  serialNumber String?        @unique @map("serial_number")
+  nickname     String?
+  brand        String?
+  model        String?
+  kitId        String?        @map("kit_id")
+  status       NotebookStatus @default(DISPONIVEL)
+  notes        String?
+
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  kit              Kit?              @relation(fields: [kitId], references: [id], onDelete: SetNull)
+  reservationItems ReservationItem[]
+  incidents        Incident[]
+
+  @@index([kitId])
+  @@index([status])
+  @@map("notebooks")
+}
+
+/// Kit de carregadores associado a uma maleta ou carrinho.
+model ChargerKit {
+  id            String           @id @default(uuid(7))
+  code          String           @unique
+  /// Kit ao qual pertence. Opcional para permitir kits de reposição avulsos.
+  kitId         String?          @unique @map("kit_id")
+  /// Quantidade total de carregadores que o kit deveria ter.
+  totalQuantity Int              @map("total_quantity")
+  /// Quantidade efetivamente presente/funcional.
+  availableQuantity Int          @map("available_quantity")
+  status        ChargerKitStatus @default(COMPLETO)
+  /// Peças faltantes/observações operacionais.
+  missingParts  String?          @map("missing_parts")
+  notes         String?
+
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  kit       Kit?       @relation(fields: [kitId], references: [id], onDelete: SetNull)
+  incidents Incident[]
+
+  @@index([status])
+  @@map("charger_kits")
+}
+
+// ---------------------------------------------------------------------------
+// Reservas
+// ---------------------------------------------------------------------------
+
+/// Reserva de um ou mais recursos por um professor.
+///
+/// `startsAt`/`endsAt` são sempre preenchidos (UTC). Quando a reserva é por dia
+/// inteiro (`allDay`), o intervalo cobre o dia todo no fuso da instituição.
+/// Toda checagem de conflito usa esse intervalo.
+model Reservation {
+  id     String @id @default(uuid(7))
+  /// Código curto legível para o comprovante (ex.: "RS-3F7K2A").
+  code   String @unique
+  userId String @map("user_id")
+
+  /// Dia da reserva no fuso da instituição (00:00 local, em UTC).
+  date     DateTime @db.Date
+  startsAt DateTime @db.Timestamptz(3) @map("starts_at")
+  endsAt   DateTime @db.Timestamptz(3) @map("ends_at")
+  allDay   Boolean  @default(false) @map("all_day")
+
+  purpose     String?
+  className   String? @map("class_name")
+  subject     String? @map("subject")
+  room        String?
+  /// Quantidade de notebooks solicitada quando a reserva é de kit parcial.
+  requestedNotebooks Int? @map("requested_notebooks")
+
+  status          ReservationStatus @default(CONFIRMADA)
+  teacherNotes    String?           @map("teacher_notes")
+  supervisorNotes String?           @map("supervisor_notes")
+
+  /// Registro operacional de retirada/devolução.
+  pickedUpAt  DateTime? @db.Timestamptz(3) @map("picked_up_at")
+  returnedAt  DateTime? @db.Timestamptz(3) @map("returned_at")
+  closedAt    DateTime? @db.Timestamptz(3) @map("closed_at")
+  cancelledAt DateTime? @db.Timestamptz(3) @map("cancelled_at")
+  cancelReason String?  @map("cancel_reason")
+
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  user      User  @relation("ReservationOwner", fields: [userId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  items     ReservationItem[]
+  incidents Incident[]
+  whatsappContacts WhatsappContactLog[]
+
+  @@index([userId, date])
+  @@index([date, status])
+  @@index([startsAt, endsAt])
+  @@index([status])
+  @@map("reservations")
+}
+
+/// Vínculo entre uma reserva e um recurso concreto (kit ou notebook).
+///
+/// Os campos `resourceKey`, `startsAt`, `endsAt` e `blocking` são
+/// desnormalizados a partir da reserva para permitir a restrição EXCLUDE do
+/// PostgreSQL (`btree_gist`), que garante no próprio banco que dois itens
+/// ativos do mesmo recurso nunca se sobrepõem no tempo. A checagem na camada
+/// de serviço existe para dar mensagens claras; a restrição é a rede de
+/// segurança contra corridas entre requisições simultâneas.
+model ReservationItem {
+  id            String              @id @default(uuid(7))
+  reservationId String              @map("reservation_id")
+  type          ReservationItemType
+  kitId         String?             @map("kit_id")
+  notebookId    String?             @map("notebook_id")
+  /// Quantidade de notebooks solicitada dentro do kit (informativo).
+  quantity      Int?
+
+  /// Chave sintética do recurso: "kit:<id>" ou "notebook:<id>".
+  resourceKey String   @map("resource_key")
+  startsAt    DateTime @db.Timestamptz(3) @map("starts_at")
+  endsAt      DateTime @db.Timestamptz(3) @map("ends_at")
+  /// true enquanto a reserva ocupa o recurso. Cancelada/encerrada => false.
+  blocking    Boolean  @default(true)
+
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  kit         Kit?        @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  notebook    Notebook?   @relation(fields: [notebookId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationId, resourceKey])
+  @@index([resourceKey, blocking])
+  @@index([startsAt, endsAt])
+  @@index([kitId])
+  @@index([notebookId])
+  @@map("reservation_items")
+}
+
+// ---------------------------------------------------------------------------
+// Ocorrências
+// ---------------------------------------------------------------------------
+
+/// Problema registrado em um notebook, kit, kit de carregadores ou reserva.
+model Incident {
+  id         String             @id @default(uuid(7))
+  code       String             @unique
+  targetType IncidentTargetType @map("target_type")
+
+  notebookId    String? @map("notebook_id")
+  kitId         String? @map("kit_id")
+  chargerKitId  String? @map("charger_kit_id")
+  reservationId String? @map("reservation_id")
+
+  reportedById String  @map("reported_by_id")
+  assignedToId String? @map("assigned_to_id")
+
+  category    IncidentCategory
+  severity    IncidentSeverity
+  status      IncidentStatus   @default(ABERTA)
+  description String
+  resolution  String?
+  resolvedAt  DateTime?        @db.Timestamptz(3) @map("resolved_at")
+
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  notebook    Notebook?    @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  kit         Kit?         @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  chargerKit  ChargerKit?  @relation(fields: [chargerKitId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  reportedBy  User         @relation("IncidentReporter", fields: [reportedById], references: [id], onDelete: Restrict)
+  assignedTo  User?        @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  attachments IncidentAttachment[]
+
+  @@index([status, severity])
+  @@index([notebookId])
+  @@index([kitId])
+  @@index([reservationId])
+  @@index([reportedById])
+  @@index([createdAt])
+  @@map("incidents")
+}
+
+/// Anexo (foto) de uma ocorrência. O binário fica no storage (S3 ou volume),
+/// nunca no banco; aqui guardamos apenas a chave e os metadados validados.
+model IncidentAttachment {
+  id           String   @id @default(uuid(7))
+  incidentId   String   @map("incident_id")
+  storageKey   String   @map("storage_key")
+  fileName     String   @map("file_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  uploadedById String   @map("uploaded_by_id")
+  createdAt    DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([incidentId])
+  @@map("incident_attachments")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria, configurações e privacidade
+// ---------------------------------------------------------------------------
+
+/// Trilha de auditoria e histórico de alterações.
+///
+/// Serve como fonte única do "histórico de alterações" exigido para kits,
+/// notebooks, reservas e ocorrências — evitando uma tabela de histórico por
+/// entidade. `before`/`after` guardam apenas campos relevantes, já filtrados
+/// de dados sensíveis (nunca hash de senha ou token).
+model AuditLog {
+  id        String   @id @default(uuid(7))
+  actorId   String?  @map("actor_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  summary   String?
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Configurações administrativas parametrizáveis (chave -> JSON).
+model SystemSetting {
+  key         String   @id
+  value       Json
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @db.Timestamptz(3) @updatedAt @map("updated_at")
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("system_settings")
+}
+
+/// Registro do evento de geração de um link de WhatsApp.
+///
+/// Guardamos apenas quem pediu, para quem e quando — nunca o conteúdo da
+/// conversa nem o texto enviado.
+model WhatsappContactLog {
+  id            String   @id @default(uuid(7))
+  requesterId   String   @map("requester_id")
+  targetUserId  String   @map("target_user_id")
+  reservationId String?  @map("reservation_id")
+  createdAt     DateTime @db.Timestamptz(3) @default(now()) @map("created_at")
+
+  requester   User         @relation("WhatsappRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  targetUser  User         @relation("WhatsappTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([requesterId, createdAt])
+  @@index([createdAt])
+  @@map("whatsapp_contact_logs")
+}
