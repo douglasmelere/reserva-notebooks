@@ -172,10 +172,12 @@ export default async function InicioPage() {
           href="/reservar"
           className="flex min-h-24 items-center gap-4 rounded-xl bg-senai-700 px-5 py-4 text-white transition-colors hover:bg-senai-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-senai-700"
         >
-          <CalendarPlus
-            aria-hidden="true"
-            className="size-7 shrink-0 text-senai-700"
-          />
+          {/*
+            Sem classe de cor: o ícone herda o `text-white` do cartão pelo
+            `currentColor`. Fixar a cor da marca aqui o deixaria azul sobre
+            azul — invisível.
+          */}
+          <CalendarPlus aria-hidden="true" className="size-7 shrink-0" />
           <span>
             <span className="block text-lg font-semibold">Fazer reserva</span>
             <span className="block text-sm text-senai-100">

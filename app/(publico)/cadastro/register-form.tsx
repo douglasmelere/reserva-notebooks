@@ -172,7 +172,14 @@ export function RegisterForm() {
     Object.values(campos).some((lista) => lista.includes(erro.mensagem));
 
   return (
-    <form onSubmit={cadastrar} noValidate className="flex flex-col gap-4">
+    <form method="post" onSubmit={cadastrar} noValidate className="flex flex-col gap-4">
+      {/*
+        `method="post"` protege o caminho degradado: se o JavaScript ainda não
+        hidratou (rede lenta da escola) ou falhou, o navegador faz o envio nativo
+        do formulário — e um GET colocaria a senha na barra de endereços, no
+        histórico e no log do proxy. Com POST, nenhuma credencial vaza pela URL.
+        O `onSubmit` continua sendo o caminho normal.
+      */}
       {/* O contêiner só existe quando há aviso: como item de um flex com
           `gap-4`, um <div> vazio ainda somaria um espaço de 1rem acima do
           primeiro campo, sem nada que o explicasse na tela. */}

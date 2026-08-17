@@ -94,7 +94,14 @@ export function SenhaForm({ obrigatoria }: { obrigatoria: boolean }) {
   }
 
   return (
-    <form onSubmit={revisar} noValidate>
+    <form method="post" onSubmit={revisar} noValidate>
+      {/*
+        `method="post"` protege o caminho degradado: se o JavaScript ainda não
+        hidratou (rede lenta da escola) ou falhou, o navegador faz o envio nativo
+        do formulário — e um GET colocaria a senha na barra de endereços, no
+        histórico e no log do proxy. Com POST, nenhuma credencial vaza pela URL.
+        O `onSubmit` continua sendo o caminho normal.
+      */}
       {obrigatoria && (
         <Alert tone="warning" title="Troca de senha pendente" className="mb-4">
           Sua senha foi definida ou redefinida pela supervisão. Escolha uma
